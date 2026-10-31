@@ -53,7 +53,9 @@
     "prepack": "npm run build",
     "smoke": "node scripts/smoke.js",
     "bench": "tsx benchmarks/bench.ts",
-    "bench:baselines": "tsx benchmarks/baselines.ts"
+    "bench:baselines": "tsx benchmarks/baselines.ts",
+    "bench:fetch": "tsx benchmarks/real.ts",
+    "bench:units": "tsx benchmarks/units-perf.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

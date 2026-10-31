@@ -96,6 +96,25 @@ export interface FindingsFile {
   readonly usage?: Usage;
 }
 
+export type RepoKind = "backend" | "frontend" | "library" | "business" | "monorepo";
+
+export interface RealRepo {
+  /** Also the name of `labels/<name>.json` and `real/<name>/` in a run. */
+  readonly name: string;
+  readonly url: string;
+  readonly sha: string;
+  readonly license: string;
+  readonly kind: RepoKind;
+  readonly description: string;
+  /** Subdirectory to analyze; the whole repository when absent. */
+  readonly path?: string;
+  readonly lines: number;
+}
+
+export interface ReposFile {
+  readonly repos: readonly RealRepo[];
+}
+
 export type ValidationResult<T> =
   | { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly errors: readonly string[] };
@@ -109,6 +128,7 @@ const annotationsValidator = ajv.compile<Annotations>(loadSchema("annotations.sc
 const labelsValidator = ajv.compile<Labels>(loadSchema("labels.schema.json"));
 const candidatesValidator = ajv.compile<CandidatesFile>(loadSchema("candidates.schema.json"));
 const findingsValidator = ajv.compile<FindingsFile>(loadSchema("findings.schema.json"));
+const reposValidator = ajv.compile<ReposFile>(loadSchema("repos.schema.json"));
 
 function formatErrors(errors: readonly ErrorObject[] | null | undefined): string[] {
   return (errors ?? []).map((e) => `${e.instancePath || "/"} ${e.message ?? "is invalid"}`);
@@ -171,6 +191,22 @@ export function validateFindings(data: unknown): ValidationResult<FindingsFile> 
   result.value.findings.forEach((f, i) => {
     if (seen.has(f.id)) errors.push(`/findings/${i}/id duplicate finding id '${f.id}'`);
     seen.add(f.id);
+  });
+  return errors.length === 0 ? result : { ok: false, errors };
+}
+
+export function validateRepos(data: unknown): ValidationResult<ReposFile> {
+  const result = checkSchema(reposValidator, data);
+  if (!result.ok) return result;
+  const errors: string[] = [];
+  const seen = new Set<string>();
+  result.value.repos.forEach((repo, i) => {
+    if (seen.has(repo.name)) errors.push(`/repos/${i}/name duplicate repository name '${repo.name}'`);
+    seen.add(repo.name);
+    if (repo.path !== undefined) {
+      const pathError = checkPath(repo.path);
+      if (pathError !== undefined) errors.push(`/repos/${i}/path ${pathError}`);
+    }
   });
   return errors.length === 0 ? result : { ok: false, errors };
 }

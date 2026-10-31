@@ -44,6 +44,10 @@ Each unit has an id like `src/users/user.service.ts#UserService.deactivate:metho
 
 When two units would get the same id (declaration merging, duplicate keys), the second one gets a `~2` suffix.
 
+## Cache
+
+The CLI keeps the extracted units in `.paralog/cache/` (add `.paralog/` to your `.gitignore`); `--no-cache` skips it. A file is extracted again when it changes, when a project file it imports changes (directly or through re-exports), when its tsconfig options change or when paralog's extractor changes. Changes inside `node_modules` are not tracked: run with `--no-cache` after upgrading a dependency whose types matter.
+
 ## Development
 
 Requires Node 22 or later (development and CI on Node 26).

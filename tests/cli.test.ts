@@ -50,10 +50,10 @@ describe("cli units", () => {
       "src/a.ts": "export function double(n: number): number { return n * 2; }",
     });
     const io = capture();
-    expect(run(["units", root], io)).toBe(ExitCode.Ok);
+    expect(run(["units", root, "--no-cache"], io)).toBe(ExitCode.Ok);
     const units = JSON.parse(io.out) as { id: string }[];
     expect(units.map((u) => u.id)).toEqual(["src/a.ts#double:function"]);
-    expect(io.err).toMatch(/^1 units from 1 files in 1 projects \(0 files excluded\) in \d+\.\ds\n$/);
+    expect(io.err).toMatch(/^1 units from 1 files in 1 projects \(0 files excluded, 0 cached\) in \d+\.\ds\n$/);
   });
 
   it("fails with exit code 2 on a missing directory", () => {

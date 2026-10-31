@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flgisimone/paralog/benchmarks/schema/repos.schema.json",
+  "title": "paralog benchmark real repositories",
+  "description": "Open source repositories the benchmark analyzes, pinned to a commit.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["repos"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "repos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "url", "sha", "license", "kind", "description", "lines"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$" },
+          "url": { "type": "string", "pattern": "^https://" },
+          "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+          "license": { "type": "string", "minLength": 1 },
+          "kind": { "enum": ["backend", "frontend", "library", "business", "monorepo"] },
+          "description": { "type": "string", "minLength": 1 },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Subdirectory to analyze, relative to the repository root. Default: the whole repository."
+          },
+          "lines": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "TypeScript lines without tests, declarations and generated code, measured when the commit was pinned."
+          }
+        }
+      }
+    }
+  }
+}

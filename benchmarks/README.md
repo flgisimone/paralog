@@ -7,6 +7,7 @@ How paralog's precision and recall are measured. The plan is in [`plan/01-benchm
 | Path | Content |
 |---|---|
 | `fixtures/<name>/` | Synthetic repositories with overlaps inserted on purpose; `annotations.json` lists the overlaps (difficulty 1–4) and the near-misses that must not be reported. |
+| `real/repos.json` | Real repositories pinned to a commit; `npm run bench:fetch` downloads them into `.repos/` (ignored by git). |
 | `labels/<repo>.json` | Hand labels of the findings reported on a real repository: `true`, `false` or `"unsure"` per finding id. |
 | `schema/` | JSON Schemas of annotations, labels, candidates and findings. |
 | `schema.ts`, `score.ts`, `bench.ts` | Formats, scoring and the `npm run bench` command. |
@@ -40,3 +41,7 @@ Matching rule: a candidate pair or a finding hits a case when it contains member
 ## Baselines
 
 `npm run bench:baselines` runs jscpd and Fallow in their most permissive lexical and structural modes, maps every duplicated fragment to the units it overlaps and scores the unit pairs like a paralog run. The embedding-based modes (`jscpd --semantic`, `fallow similar-code`) download a model from huggingface.co on first use and are not in the list yet: run them on a machine that can download the model and add them to `BASELINES` in `baselines.ts`.
+
+## Real repositories
+
+`npm run bench:fetch` downloads each repository of `real/repos.json` at its pinned commit (shallow fetch of that commit only); `--only <name>` limits it. Dependencies are not installed: imports from npm packages, and tsconfigs that extend a configuration from a package, resolve less precisely than in a real checkout. `npm run bench:units` measures the extraction on them.

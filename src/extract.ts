@@ -20,6 +20,7 @@ import {
   type Type,
   type TypeChecker,
 } from "ts-morph";
+import { cacheKeys, UnitCache } from "./cache.js";
 import { loadConfig, type ParalogConfig } from "./config.js";
 import { discoverProjects, toPosix, type Discovery } from "./discovery.js";
 
@@ -63,12 +64,16 @@ export interface ExtractOptions {
   readonly root: string;
   /** Defaults to `paralog.config.json` in the root, or the defaults. */
   readonly config?: ParalogConfig;
+  /** Reuse and update `.paralog/cache/` in the root. Default: false. */
+  readonly cache?: boolean;
 }
 
 export interface Extraction {
   readonly discovery: Discovery;
   /** Sorted by id. */
   readonly units: readonly CodeUnit[];
+  /** Files whose units came from the cache and files extracted again. */
+  readonly stats: { readonly cachedFiles: number; readonly extractedFiles: number };
 }
 
 type FunctionLike =
@@ -517,17 +522,45 @@ export function extractUnits(options: ExtractOptions): Extraction {
   const root = resolve(options.root);
   const config = options.config ?? loadConfig(root);
   const discovery = discoverProjects(root, config);
+  const cache = options.cache === true ? new UnitCache(root, EXTRACTOR_VERSION) : undefined;
   const byId = new Map<string, CodeUnit>();
+  let cachedFiles = 0;
+  let extractedFiles = 0;
 
   for (const { tsconfig, files } of discovery.projects) {
-    const project = new Project({ tsConfigFilePath: resolve(root, tsconfig), skipLoadingLibFiles: false });
-    for (const unit of extractFromProject(root, project, files)) {
+    const projectUnits: CodeUnit[] = [];
+    let missing: string[] = [...files];
+    let keys: Map<string, string> | undefined;
+    if (cache !== undefined) {
+      keys = cacheKeys(root, tsconfig, files);
+      missing = [];
+      for (const file of files) {
+        const units = cache.get(file, keys.get(file) ?? "");
+        if (units === undefined) missing.push(file);
+        else projectUnits.push(...units);
+      }
+    }
+    cachedFiles += files.length - missing.length;
+    extractedFiles += missing.length;
+    // Creating the program and the type checker is the expensive part: skip it when every file is cached.
+    if (missing.length > 0) {
+      const project = new Project({ tsConfigFilePath: resolve(root, tsconfig), skipLoadingLibFiles: false });
+      const extracted = extractFromProject(root, project, missing);
+      projectUnits.push(...extracted);
+      if (cache !== undefined && keys !== undefined) {
+        const byFile = new Map<string, CodeUnit[]>(missing.map((f) => [f, []]));
+        for (const unit of extracted) byFile.get(unit.file)?.push(unit);
+        for (const [file, units] of byFile) cache.set(file, keys.get(file) ?? "", units);
+      }
+    }
+    for (const unit of projectUnits) {
       // Same qualified name twice in a file (declaration merging, duplicate keys): keep both, suffixed.
       let id = unit.id;
       for (let n = 2; byId.has(id); n++) id = `${unit.id}~${n}`;
       byId.set(id, id === unit.id ? unit : { ...unit, id });
     }
   }
+  cache?.save(new Set(discovery.projects.flatMap((p) => p.files)));
   const units = [...byId.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-  return { discovery, units };
+  return { discovery, units, stats: { cachedFiles, extractedFiles } };
 }

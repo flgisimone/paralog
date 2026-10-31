@@ -1,0 +1,69 @@
+{
+  "$schema": "../schema/repos.schema.json",
+  "repos": [
+    {
+      "name": "nestjs-boilerplate",
+      "url": "https://github.com/brocoders/nestjs-boilerplate",
+      "sha": "9620f159eefe38f47747d02ab162852367c5472c",
+      "license": "MIT",
+      "kind": "backend",
+      "description": "NestJS REST API boilerplate with auth, users, files and sessions.",
+      "lines": 7501
+    },
+    {
+      "name": "refined-github",
+      "url": "https://github.com/refined-github/refined-github",
+      "sha": "6069cf250c868c5f00365e11664d0f5be54282d3",
+      "license": "MIT",
+      "kind": "frontend",
+      "description": "Browser extension: hundreds of small independent features on GitHub pages.",
+      "lines": 21623
+    },
+    {
+      "name": "trpc",
+      "url": "https://github.com/trpc/trpc",
+      "sha": "06548303fffc512b8268d4a8320677b5d7985e73",
+      "license": "MIT",
+      "kind": "library",
+      "description": "Type-safe RPC library; pnpm monorepo with server, client and framework adapters.",
+      "lines": 46143
+    },
+    {
+      "name": "actual-loot-core",
+      "url": "https://github.com/actualbudget/actual",
+      "sha": "5897cfa65afec3d0252d7467e5b7a033fb66900b",
+      "license": "MIT",
+      "kind": "business",
+      "description": "Core of a personal budgeting app: accounts, transactions, rules, budgets, sync.",
+      "lines": 49328,
+      "path": "packages/loot-core"
+    },
+    {
+      "name": "zod",
+      "url": "https://github.com/colinhacks/zod",
+      "sha": "2554b70c3d4a80273381e61d527d820720626440",
+      "license": "MIT",
+      "kind": "library",
+      "description": "Schema validation library; monorepo with several API generations.",
+      "lines": 51459
+    },
+    {
+      "name": "hoppscotch",
+      "url": "https://github.com/hoppscotch/hoppscotch",
+      "sha": "39d25650bdb4e86464b2cd69174c567b86f57892",
+      "license": "MIT",
+      "kind": "monorepo",
+      "description": "API client: NestJS backend, Vue frontends and shared packages.",
+      "lines": 141062
+    },
+    {
+      "name": "excalidraw",
+      "url": "https://github.com/excalidraw/excalidraw",
+      "sha": "8bcdca4526867433f99fdfcb55a063668db0c9dc",
+      "license": "MIT",
+      "kind": "frontend",
+      "description": "Whiteboard app; React monorepo with element, math and common packages.",
+      "lines": 149173
+    }
+  ]
+}

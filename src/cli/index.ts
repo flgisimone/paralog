@@ -27,6 +27,7 @@ Commands:
   units [path]   Print the extracted units as JSON (debugging); path defaults to "."
 
 Options:
+  --no-cache     Do not read or write .paralog/cache
   -h, --help     Show this help
   -v, --version  Show the version
 
@@ -45,6 +46,7 @@ export function run(argv: readonly string[], io: CliIO): ExitCode {
       options: {
         help: { type: "boolean", short: "h" },
         version: { type: "boolean", short: "v" },
+        "no-cache": { type: "boolean" },
       },
     });
   } catch (error) {
@@ -63,7 +65,7 @@ export function run(argv: readonly string[], io: CliIO): ExitCode {
     io.stdout(HELP);
     return ExitCode.Ok;
   }
-  if (command === "units") return units(positionals.slice(1), io);
+  if (command === "units") return units(positionals.slice(1), io, { cache: values["no-cache"] !== true });
   io.stderr(`paralog: unknown command '${command}'\n`);
   io.stderr("Run 'paralog --help' for usage.\n");
   return ExitCode.Error;
@@ -74,23 +76,23 @@ function fail(io: CliIO, message: string): ExitCode {
   return ExitCode.Error;
 }
 
-function units(args: readonly string[], io: CliIO): ExitCode {
+function units(args: readonly string[], io: CliIO, options: { cache: boolean }): ExitCode {
   if (args.length > 1) return fail(io, "units takes at most one path");
   const root = resolve(args[0] ?? ".");
   if (!existsSync(root) || !statSync(root).isDirectory()) return fail(io, `not a directory: ${root}`);
   const started = performance.now();
   let extraction;
   try {
-    extraction = extractUnits({ root });
+    extraction = extractUnits({ root, cache: options.cache });
   } catch (error) {
     return fail(io, error instanceof Error ? error.message : String(error));
   }
-  const { discovery, units } = extraction;
+  const { discovery, units, stats } = extraction;
   for (const warning of discovery.warnings) io.stderr(`warning: ${warning}\n`);
   const files = discovery.projects.reduce((n, p) => n + p.files.length, 0);
   const seconds = ((performance.now() - started) / 1000).toFixed(1);
   io.stderr(
-    `${units.length} units from ${files} files in ${discovery.projects.length} projects (${discovery.excludedFiles} files excluded) in ${seconds}s\n`,
+    `${units.length} units from ${files} files in ${discovery.projects.length} projects (${discovery.excludedFiles} files excluded, ${stats.cachedFiles} cached) in ${seconds}s\n`,
   );
   io.stdout(`${JSON.stringify(units, null, 2)}\n`);
   return ExitCode.Ok;

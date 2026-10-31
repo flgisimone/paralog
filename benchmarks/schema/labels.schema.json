@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flgisimone/paralog/benchmarks/schema/labels.schema.json",
+  "title": "paralog benchmark labels",
+  "description": "Hand labels of the findings paralog reported on a real repository.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["repo", "sha", "labels"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "repo": { "type": "string", "minLength": 1 },
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "labels": {
+      "type": "object",
+      "description": "Finding id -> true (real overlap), false (false positive) or \"unsure\" (excluded from precision, reported).",
+      "propertyNames": { "minLength": 1 },
+      "additionalProperties": {
+        "anyOf": [{ "type": "boolean" }, { "const": "unsure" }]
+      }
+    }
+  }
+}

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+coverage/
+*.tgz
+.paralog/
+benchmarks/.repos/
+benchmarks/results/
+.DS_Store

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flgisimone/paralog/benchmarks/schema/annotations.schema.json",
+  "title": "paralog benchmark annotations",
+  "description": "Known overlaps and near-misses inserted in a benchmark fixture.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["fixture", "overlaps", "nearMisses"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "fixture": { "type": "string", "minLength": 1 },
+    "overlaps": { "type": "array", "items": { "$ref": "#/$defs/overlap" } },
+    "nearMisses": { "type": "array", "items": { "$ref": "#/$defs/nearMiss" } }
+  },
+  "$defs": {
+    "caseId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "description": "Kebab-case identifier, unique within the file."
+    },
+    "member": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["file", "symbol"],
+      "properties": {
+        "file": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path relative to the fixture root, with forward slashes."
+        },
+        "symbol": {
+          "type": "string",
+          "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*$",
+          "description": "Qualified name of the unit, e.g. UserService.deactivate."
+        }
+      }
+    },
+    "members": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/member" }
+    },
+    "overlap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "members", "difficulty", "rationale"],
+      "properties": {
+        "id": { "$ref": "#/$defs/caseId" },
+        "kind": { "enum": ["semantic_duplication", "responsibility_overlap"] },
+        "members": { "$ref": "#/$defs/members" },
+        "difficulty": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "rationale": { "type": "string", "minLength": 1 }
+      }
+    },
+    "nearMiss": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "members", "reason"],
+      "properties": {
+        "id": { "$ref": "#/$defs/caseId" },
+        "members": { "$ref": "#/$defs/members" },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

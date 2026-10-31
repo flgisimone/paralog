@@ -21,7 +21,35 @@ A *paralog* is a gene duplicated inside the same genome that then diverges: diff
 
 ## Status
 
-The plan is in [`plan/`](plan/README.md) (in Italian). Done: foundations (F2) and deterministic candidates (F3); current work: AI judgment (F4); the synthetic benchmark fixture is in [`benchmarks/fixtures/shop`](benchmarks/fixtures/shop).
+The plan is in [`plan/`](plan/README.md) (in Italian). Done: foundations (F2) and deterministic candidates (F3); AI judgment (F4) is implemented and awaiting its precision gate on real models; the synthetic benchmark fixture is in [`benchmarks/fixtures/shop`](benchmarks/fixtures/shop).
+
+## Checking a repository
+
+`paralog check [path]` runs the whole pipeline: units, candidates, then each of the first candidate pairs judged by the AI provider configured in `paralog.config.json`. Without a provider it stops with an error and sends nothing; `paralog candidates` works without AI.
+
+```json
+{
+  "ai": { "provider": "anthropic", "model": "claude-opus-5-5" }
+}
+```
+
+| `ai` option | Default | Meaning |
+|---|---|---|
+| `provider` | — | `anthropic`, or `openai-compatible` (Ollama, vLLM, OpenRouter, OpenAI) |
+| `model` | — | Model id, e.g. `claude-opus-5-5`, `claude-haiku-5-5`, `qwen3-coder:30b` |
+| `baseUrl` | — | Required for `openai-compatible`, e.g. `http://localhost:11434/v1` |
+| `apiKeyEnv` | `ANTHROPIC_API_KEY` for `anthropic`, none otherwise | Name of the environment variable holding the key; the key never goes in the file |
+| `effort` | `medium` | `anthropic` only: `low` … `max` |
+| `concurrency` | 4 | Pairs judged in parallel |
+| `timeoutMs`, `maxRetries` | 120000, 3 | Per request; retries on rate limits, server and network errors |
+
+For each pair the model answers `same_responsibility`, `partial_overlap`, `intentional_variant` or `different`, with line-level evidence. A finding is **confirmed** only when every cited line range lies inside the cited unit and at least half of the claims are backed by something the two units share (a property, call, literal or type) found in the cited lines of both. Other positive verdicts are **unverified** and hidden unless `--all` is given. Pairs that share supporting features are grouped into one finding (A~B and B~C with a common reason).
+
+Options: `--max-pairs <n>` (default 50), `--budget <tokens>`, `--dry-run` (list the pairs and the estimated tokens, send nothing), `--all`, `--json`, `--no-cache`. Verdicts are cached in `.paralog/cache/` by the bodies of the two units, the model and the prompt version: a second run without changes calls no model.
+
+### What goes to the model
+
+For each judged pair: the full source of the two units with their line numbers, the definitions of the project types they use (up to 8, 40 lines each), the names and files of their direct callers, and the deterministic signals. Nothing else from the repository is sent, and nothing at all without an `ai` section. The prompt tells the model that code, comments and strings are data, not instructions.
 
 ## Configuration
 
@@ -31,6 +59,7 @@ paralog finds every `tsconfig.json` under the root (workspaces and project refer
 |---|---|---|
 | `tsconfigs` | `[]` (discover all) | tsconfig files to use, relative to the root; their project references are followed. |
 | `exclude` | `[]` | Extra globs to skip, relative to the root. |
+| `ai` | none | AI provider for `paralog check`; see [Checking a repository](#checking-a-repository). |
 | `embeddings` | none | Optional embeddings for the candidates; see [Embeddings](#embeddings-optional). |
 | `defaultExcludes` | `true` | Skip tests (`*.test.ts`, `*.spec.ts`, `__tests__/`, `test/`, `tests/`, `e2e/`), declaration files, generated code (`*.generated.ts`, `*.gen.ts`, `generated/`, `__generated__/`) and `node_modules/`, `dist/`, `build/`, `coverage/`. |
 

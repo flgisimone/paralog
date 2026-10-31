@@ -1,0 +1,272 @@
+{
+  "note": "Hand-written model answers for 10 pairs of the shop fixture, in the verdict format. They are not recorded from a real model: they pin down parsing and evidence verification, and must be replaced by real recordings when a provider is available (plan F4-02).",
+  "pairs": [
+    {
+      "case": "close-account",
+      "a": "AccountManager.closeAccount",
+      "b": "UserService.deactivate",
+      "expected": "confirmed",
+      "output": {
+        "verdict": "same_responsibility",
+        "sharedResponsibility": "Closing a customer account: mark it inactive, revoke the sessions and send the closing e-mail.",
+        "differences": [
+          "The admin version records who closed the account"
+        ],
+        "evidence": [
+          {
+            "claim": "Both mark the account inactive with the current date",
+            "linesA": [
+              18,
+              18
+            ],
+            "linesB": [
+              38,
+              38
+            ]
+          },
+          {
+            "claim": "Both revoke every session of the user",
+            "linesA": [
+              16,
+              17
+            ],
+            "linesB": [
+              40,
+              42
+            ]
+          },
+          {
+            "claim": "Both send the same closing e-mail",
+            "linesA": [
+              20,
+              24
+            ],
+            "linesB": [
+              43,
+              43
+            ]
+          }
+        ],
+        "suggestion": "Keep UserService.deactivate and call it from AccountManager.closeAccount."
+      }
+    },
+    {
+      "case": "email-format",
+      "a": "checkEmailFormat",
+      "b": "isValidEmail",
+      "expected": "confirmed",
+      "output": {
+        "verdict": "same_responsibility",
+        "sharedResponsibility": "Validating the format of an e-mail address.",
+        "differences": [],
+        "evidence": [
+          {
+            "claim": "Both trim the address and reject more than 254 characters",
+            "linesA": [
+              5,
+              6
+            ],
+            "linesB": [
+              7,
+              8
+            ]
+          },
+          {
+            "claim": "Both test the same pattern",
+            "linesA": [
+              6,
+              6
+            ],
+            "linesB": [
+              9,
+              9
+            ]
+          }
+        ],
+        "suggestion": "Use isValidEmail from core."
+      }
+    },
+    {
+      "case": "order-amount",
+      "a": "OrderAdmin.computeOrderAmount",
+      "b": "cartTotal",
+      "expected": "confirmed",
+      "output": {
+        "verdict": "same_responsibility",
+        "sharedResponsibility": "Summing quantity times unit price over order lines.",
+        "differences": [],
+        "evidence": [
+          {
+            "claim": "Both add quantity times unit price for every line",
+            "linesA": [
+              17,
+              17
+            ],
+            "linesB": [
+              5,
+              5
+            ]
+          }
+        ],
+        "suggestion": "Extract a linesTotal helper in core."
+      }
+    },
+    {
+      "case": "late-fee",
+      "a": "isOverdue",
+      "b": "InvoiceService.applyLateFee",
+      "expected": "confirmed",
+      "output": {
+        "verdict": "partial_overlap",
+        "sharedResponsibility": "Deciding whether an invoice is late enough for the late fee.",
+        "differences": [
+          "applyLateFee also computes and adds the fee"
+        ],
+        "evidence": [
+          {
+            "claim": "Both require the invoice to be unpaid, without a fee and more than 30 days past due",
+            "linesA": [
+              34,
+              34
+            ],
+            "linesB": [
+              7,
+              9
+            ]
+          }
+        ],
+        "suggestion": "Call InvoiceService.applyLateFee from the dunning run."
+      }
+    },
+    {
+      "case": "loyalty-points",
+      "a": "computeRewardPoints",
+      "b": "LoyaltyService.pointsFor",
+      "expected": "confirmed",
+      "output": {
+        "verdict": "same_responsibility",
+        "sharedResponsibility": "Loyalty points earned by an order.",
+        "differences": [],
+        "evidence": [
+          {
+            "claim": "Both give no points for cancelled or refunded orders",
+            "linesA": [
+              5,
+              5
+            ],
+            "linesB": [
+              8,
+              8
+            ]
+          },
+          {
+            "claim": "Both give one point per whole euro, multiplied by the tier",
+            "linesA": [
+              6,
+              9
+            ],
+            "linesB": [
+              9,
+              10
+            ]
+          }
+        ],
+        "suggestion": "Use LoyaltyService.pointsFor."
+      }
+    },
+    {
+      "case": "invoice-from-order (bad evidence)",
+      "a": "createInvoiceFromOrder",
+      "b": "InvoiceBuilder.build",
+      "expected": "unverified",
+      "output": {
+        "verdict": "same_responsibility",
+        "sharedResponsibility": "Building an invoice from an order.",
+        "differences": [],
+        "evidence": [
+          {
+            "claim": "Both number the invoice",
+            "linesA": [
+              40,
+              45
+            ],
+            "linesB": [
+              18,
+              18
+            ]
+          },
+          {
+            "claim": "Both apply a discount",
+            "linesA": [
+              7,
+              8
+            ],
+            "linesB": [
+              25,
+              26
+            ]
+          }
+        ],
+        "suggestion": "Use InvoiceBuilder."
+      }
+    },
+    {
+      "case": "order-event-messages",
+      "a": "onOrderPaid",
+      "b": "onOrderShipped",
+      "expected": "rejected",
+      "output": {
+        "verdict": "different",
+        "sharedResponsibility": "",
+        "differences": [
+          "Different events and messages"
+        ],
+        "evidence": [],
+        "suggestion": ""
+      }
+    },
+    {
+      "case": "activate-deactivate",
+      "a": "UserService.activate",
+      "b": "UserService.deactivate",
+      "expected": "rejected",
+      "output": {
+        "verdict": "intentional_variant",
+        "sharedResponsibility": "Opposite state changes of an account.",
+        "differences": [
+          "One activates, the other deactivates"
+        ],
+        "evidence": [],
+        "suggestion": ""
+      }
+    },
+    {
+      "case": "reserve-release",
+      "a": "StockService.release",
+      "b": "StockService.reserve",
+      "expected": "rejected",
+      "output": {
+        "verdict": "intentional_variant",
+        "sharedResponsibility": "Opposite stock movements.",
+        "differences": [],
+        "evidence": [],
+        "suggestion": ""
+      }
+    },
+    {
+      "case": "csv-row-parsers",
+      "a": "parseOrderCsvRow",
+      "b": "parseProductCsvRow",
+      "expected": "rejected",
+      "output": {
+        "verdict": "different",
+        "sharedResponsibility": "",
+        "differences": [
+          "Different record types"
+        ],
+        "evidence": [],
+        "suggestion": ""
+      }
+    }
+  ]
+}

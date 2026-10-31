@@ -25,7 +25,7 @@ import { loadConfig, type ParalogConfig } from "./config.js";
 import { discoverProjects, toPosix, type Discovery } from "./discovery.js";
 
 /** Bumped whenever the extracted data changes, so that caches built by older versions are discarded. */
-export const EXTRACTOR_VERSION = 3;
+export const EXTRACTOR_VERSION = 4;
 
 export type UnitKind = "function" | "arrow" | "method" | "getter" | "setter" | "constructor";
 
@@ -65,6 +65,22 @@ export interface CodeUnit {
   readonly bodyHash: string;
 }
 
+/** A named type declared in the project: what the judgment shows the model next to the code. */
+export interface TypeDeclaration {
+  /** Qualified name, e.g. `User` or `Billing.Invoice`. */
+  readonly name: string;
+  readonly kind: "interface" | "type" | "class" | "enum";
+  readonly file: string;
+  readonly startLine: number;
+  readonly endLine: number;
+}
+
+/** What one file contributes: its units and its type declarations. */
+export interface FileExtraction {
+  readonly units: readonly CodeUnit[];
+  readonly types: readonly TypeDeclaration[];
+}
+
 export interface ExtractOptions {
   /** Repository root. */
   readonly root: string;
@@ -78,6 +94,8 @@ export interface Extraction {
   readonly discovery: Discovery;
   /** Sorted by id. */
   readonly units: readonly CodeUnit[];
+  /** Type declarations of the project, sorted by file and line. */
+  readonly types: readonly TypeDeclaration[];
   /** Files whose units came from the cache and files extracted again. */
   readonly stats: { readonly cachedFiles: number; readonly extractedFiles: number };
 }
@@ -564,15 +582,35 @@ function extractUnit(ctx: UnitContext, fn: FunctionLike): CodeUnit {
 }
 
 /** Extracts the units of the given files of one project. */
-export function extractFromProject(root: string, project: Project, files: readonly string[]): CodeUnit[] {
+function collectTypes(sourceFile: SourceFile, file: string): TypeDeclaration[] {
+  const types: TypeDeclaration[] = [];
+  sourceFile.forEachDescendant((node, traversal) => {
+    let kind: TypeDeclaration["kind"] | undefined;
+    if (Node.isInterfaceDeclaration(node)) kind = "interface";
+    else if (Node.isTypeAliasDeclaration(node)) kind = "type";
+    else if (Node.isClassDeclaration(node)) kind = "class";
+    else if (Node.isEnumDeclaration(node)) kind = "enum";
+    else if (Node.isBlock(node)) traversal.skip(); // local types inside functions are not domain types
+    if (kind !== undefined) {
+      types.push({ name: qualifiedName(node), kind, file, startLine: node.getStartLineNumber(), endLine: node.getEndLineNumber() });
+    }
+  });
+  return types;
+}
+
+/** Extracts the units and the type declarations of the given files of one project, by file. */
+export function extractFromProject(root: string, project: Project, files: readonly string[]): Map<string, FileExtraction> {
   const ctx: UnitContext = { root, checker: project.getTypeChecker() };
-  const units: CodeUnit[] = [];
+  const byFile = new Map<string, FileExtraction>();
   for (const file of files) {
     const absolute = resolve(root, file);
     const sourceFile = project.getSourceFile(absolute) ?? project.addSourceFileAtPath(absolute);
-    for (const fn of collectFunctions(sourceFile)) units.push(extractUnit(ctx, fn));
+    byFile.set(file, {
+      units: collectFunctions(sourceFile).map((fn) => extractUnit(ctx, fn)),
+      types: collectTypes(sourceFile, file),
+    });
   }
-  return units;
+  return byFile;
 }
 
 /** Discovers the projects of a repository and extracts every unit. */
@@ -582,6 +620,7 @@ export function extractUnits(options: ExtractOptions): Extraction {
   const discovery = discoverProjects(root, config);
   const cache = options.cache === true ? new UnitCache(root, EXTRACTOR_VERSION) : undefined;
   const byId = new Map<string, CodeUnit>();
+  const types: TypeDeclaration[] = [];
   let cachedFiles = 0;
   let extractedFiles = 0;
 
@@ -593,9 +632,13 @@ export function extractUnits(options: ExtractOptions): Extraction {
       keys = cacheKeys(root, tsconfig, files);
       missing = [];
       for (const file of files) {
-        const units = cache.get(file, keys.get(file) ?? "");
-        if (units === undefined) missing.push(file);
-        else projectUnits.push(...units);
+        const cached = cache.get(file, keys.get(file) ?? "");
+        if (cached === undefined) {
+          missing.push(file);
+        } else {
+          projectUnits.push(...cached.units);
+          types.push(...cached.types);
+        }
       }
     }
     cachedFiles += files.length - missing.length;
@@ -603,12 +646,10 @@ export function extractUnits(options: ExtractOptions): Extraction {
     // Creating the program and the type checker is the expensive part: skip it when every file is cached.
     if (missing.length > 0) {
       const project = new Project({ tsConfigFilePath: resolve(root, tsconfig), skipLoadingLibFiles: false });
-      const extracted = extractFromProject(root, project, missing);
-      projectUnits.push(...extracted);
-      if (cache !== undefined && keys !== undefined) {
-        const byFile = new Map<string, CodeUnit[]>(missing.map((f) => [f, []]));
-        for (const unit of extracted) byFile.get(unit.file)?.push(unit);
-        for (const [file, units] of byFile) cache.set(file, keys.get(file) ?? "", units);
+      for (const [file, extracted] of extractFromProject(root, project, missing)) {
+        projectUnits.push(...extracted.units);
+        types.push(...extracted.types);
+        if (cache !== undefined && keys !== undefined) cache.set(file, keys.get(file) ?? "", extracted);
       }
     }
     for (const unit of projectUnits) {
@@ -620,5 +661,6 @@ export function extractUnits(options: ExtractOptions): Extraction {
   }
   cache?.save(new Set(discovery.projects.flatMap((p) => p.files)));
   const units = [...byId.values()].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-  return { discovery, units, stats: { cachedFiles, extractedFiles } };
+  types.sort((a, b) => (a.file < b.file ? -1 : a.file > b.file ? 1 : a.startLine - b.startLine));
+  return { discovery, units, types, stats: { cachedFiles, extractedFiles } };
 }

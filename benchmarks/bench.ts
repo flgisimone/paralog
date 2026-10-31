@@ -1,8 +1,11 @@
 /**
  * npm run bench -- [--run <dir>] [--all]
+ * npm run bench -- [--ai <file>] [--real] [--max-pairs <n>]
  *
- * Without --run, produces the current paralog run in benchmarks/results/latest and scores it;
- * with --run, scores an existing run. Layout of the run directory:
+ * Without --run, produces the current paralog run in benchmarks/results/latest and scores it:
+ * candidates on the fixtures and, with --ai (a JSON file with an `ai` section, as in
+ * paralog.config.json), findings too; --real adds the fetched real repositories. With --run,
+ * scores an existing run. Layout of the run directory:
  *
  *   <run>/fixtures/<fixture>/candidates.json   ranked candidate pairs (optional)
  *   <run>/fixtures/<fixture>/findings.json     findings (optional)
@@ -33,7 +36,7 @@ import {
   type FixtureScore,
   type RealScore,
 } from "./score.js";
-import { generateRun } from "./run.js";
+import { generateRun, loadAiConfig } from "./run.js";
 import { restrictToSplit } from "./split.js";
 
 const BENCHMARKS = import.meta.dirname;
@@ -97,13 +100,26 @@ export function bench(runDir: string, options: { includeUnverified?: boolean } =
   return { json: `${JSON.stringify(score, null, 2)}\n`, markdown: renderMarkdown(score) };
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const { values } = parseArgs({
-    options: { run: { type: "string" }, all: { type: "boolean" } },
+    options: {
+      run: { type: "string" },
+      all: { type: "boolean" },
+      ai: { type: "string" },
+      real: { type: "boolean" },
+      "max-pairs": { type: "string" },
+    },
   });
   const runDir = resolve(values.run ?? join(BENCHMARKS, "results", "latest"));
   // Without --run, produce the current run of paralog first.
-  if (values.run === undefined) generateRun(runDir);
+  if (values.run === undefined) {
+    await generateRun(runDir, {
+      ...(values.ai === undefined ? {} : { ai: loadAiConfig(values.ai) }),
+      real: values.real === true,
+      ...(values["max-pairs"] === undefined ? {} : { maxPairs: Number(values["max-pairs"]) }),
+      log: (line) => process.stderr.write(`${line}\n`),
+    });
+  }
   const { json, markdown } = bench(runDir, { includeUnverified: values.all === true });
   writeFileSync(join(runDir, "score.json"), json);
   writeFileSync(join(runDir, "score.md"), markdown);
@@ -111,10 +127,8 @@ function main(): void {
 }
 
 if (process.argv[1] !== undefined && resolve(process.argv[1]) === resolve(import.meta.filename)) {
-  try {
-    main();
-  } catch (error) {
+  main().catch((error: unknown) => {
     process.stderr.write(`bench: ${error instanceof Error ? error.message : String(error)}\n`);
     process.exitCode = 1;
-  }
+  });
 }

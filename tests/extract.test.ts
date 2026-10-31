@@ -221,3 +221,25 @@ export function merge(user: User): User {
     expect(merge.calls).toEqual(["Object.assign"]);
   });
 });
+
+describe("extractUnits: type declarations", () => {
+  it("records interfaces, aliases, classes and enums of the project, not local types", () => {
+    const root = writeRepo({
+      "tsconfig.json": STRICT_TSCONFIG,
+      "src/types.ts": `export interface User { id: string }
+export type Status = "a" | "b";
+export enum Color { Red }
+export class Service { run(): void { interface Local { x: number } const l: Local = { x: 1 }; void l; } }
+export namespace Billing { export interface Invoice { total: number } }
+`,
+    });
+    const { types } = extractUnits({ root });
+    expect(types.map((t) => [t.name, t.kind, t.startLine])).toEqual([
+      ["User", "interface", 1],
+      ["Status", "type", 2],
+      ["Color", "enum", 3],
+      ["Service", "class", 4],
+      ["Billing.Invoice", "interface", 5],
+    ]);
+  });
+});

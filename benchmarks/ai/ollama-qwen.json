@@ -1,0 +1,1 @@
+{ "ai": { "provider": "openai-compatible", "baseUrl": "http://localhost:11434/v1", "model": "qwen3-coder:30b", "concurrency": 1, "timeoutMs": 600000 } }

@@ -48,3 +48,19 @@ Matching rule: a candidate pair or a finding hits a case when it contains member
 ## Real repositories
 
 `npm run bench:fetch` downloads each repository of `real/repos.json` at its pinned commit (shallow fetch of that commit only); `--only <name>` limits it. Dependencies are not installed: imports from npm packages, and tsconfigs that extend a configuration from a package, resolve less precisely than in a real checkout. `npm run bench:units` measures the extraction on them.
+
+## Running the precision gate (F4-07, F4-08)
+
+Needs the API keys of the models (or a local Ollama) and an hour of hand labelling.
+
+```bash
+npm run bench:fetch
+export ANTHROPIC_API_KEY=...
+npm run bench -- --ai benchmarks/ai/claude-opus.json --real
+```
+
+1. For each model in `ai/` (flagship, cheap, local), run `npm run bench -- --ai ai/<model>.json --real`, then copy `results/latest` to `results/<model>` before the next one.
+2. Label the confirmed findings of each real repository: `npm run bench:label -- --repo <name> --run benchmarks/results/<model>`. Labels are shared across models (finding ids depend only on the units), so the second model only asks about new findings.
+3. Score each run again with the labels: `npm run bench -- --run benchmarks/results/<model>`.
+4. Stability: `npm run bench:stability -- --ai ai/<model>.json --runs 3 --pairs 30`.
+5. Write the table and the gate decision (precision >= 70% on the real repositories with at least one model, stability >= 90%) in `plan/04-giudizio.md` and `plan/README.md`.

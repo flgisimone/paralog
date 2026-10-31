@@ -3,14 +3,13 @@ import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { ts } from "ts-morph";
 import { toPosix } from "./discovery.js";
-import type { CodeUnit } from "./extract.js";
+import type { FileExtraction } from "./extract.js";
 
 export const CACHE_DIR = ".paralog/cache";
 const CACHE_FILE = "units.json";
 
-interface CacheEntry {
+interface CacheEntry extends FileExtraction {
   readonly key: string;
-  readonly units: readonly CodeUnit[];
 }
 
 interface CacheData {
@@ -24,7 +23,7 @@ function sha256(...parts: readonly string[]): string {
   return hash.digest("hex");
 }
 
-/** Units of every analyzed file, keyed by a hash of the file and everything it depends on. */
+/** Units and type declarations of every analyzed file, keyed by a hash of the file and everything it depends on. */
 export class UnitCache {
   private readonly path: string;
   private readonly entries = new Map<string, CacheEntry>();
@@ -44,13 +43,13 @@ export class UnitCache {
     }
   }
 
-  get(file: string, key: string): readonly CodeUnit[] | undefined {
+  get(file: string, key: string): FileExtraction | undefined {
     const entry = this.entries.get(file);
-    return entry?.key === key ? entry.units : undefined;
+    return entry?.key === key ? entry : undefined;
   }
 
-  set(file: string, key: string, units: readonly CodeUnit[]): void {
-    this.entries.set(file, { key, units });
+  set(file: string, key: string, extraction: FileExtraction): void {
+    this.entries.set(file, { key, units: extraction.units, types: extraction.types });
   }
 
   /** Keeps only the given files (removed files leave the cache) and writes it atomically. */

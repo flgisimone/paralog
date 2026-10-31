@@ -1,0 +1,1 @@
+{ "ai": { "provider": "anthropic", "model": "claude-haiku-5-5", "effort": "medium", "concurrency": 4 } }

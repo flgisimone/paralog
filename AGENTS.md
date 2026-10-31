@@ -19,6 +19,9 @@ Guide for coding agents working **on** paralog.
 | `npm run bench` | Produces the current paralog run on the fixtures and scores it. |
 | `npm run bench -- --run <dir>` | Scores an existing run (see `benchmarks/README.md`). |
 | `npm run bench:baselines` | Runs jscpd and Fallow on the fixtures and scores them (needs network for npx). |
+| `npm run bench -- --ai benchmarks/ai/<model>.json [--real]` | Also produces findings with that model (needs its API key or a local server). |
+| `npm run bench:label -- --repo <name>` | Labels the confirmed findings of a real repository by hand. |
+| `npm run bench:stability -- --ai <file>` | Judges the same pairs three times and reports how stable the verdicts are. |
 | `npm run bench:fetch` | Downloads the real repositories of `benchmarks/real/repos.json` at their pinned commits. |
 | `npm run bench:units` | Extraction time and memory on the real repositories, cold and warm. |
 
@@ -32,6 +35,8 @@ Guide for coding agents working **on** paralog.
 | `src/config.ts`, `src/discovery.ts` | `paralog.config.json` and tsconfig discovery. |
 | `src/extract.ts` | Unit extraction with ts-morph. |
 | `src/candidates/` | Candidates (F3): `names.ts` (name tokens), `signals.ts`, `embeddings.ts`, `index.ts` (blocking, exclusions, ranking). |
+| `src/judge/` | Judgment (F4): `providers.ts`, `prompt.ts`, `evidence.ts`, `findings.ts`, `index.ts` (orchestration, verdict cache). |
+| `src/analyze.ts` | `analyze(options)`: the whole pipeline. |
 | `src/cache.ts` | `.paralog/cache/`: units per file, keyed by the file and its project imports. |
 | `benchmarks/` | Benchmark formats, fixtures, real repositories, scorer. |
 | `benchmarks/fixtures/shop/` | Synthetic fixture; `annotations.json` lists the expected overlaps and near-misses. Not type-checked or linted by the repository config: `benchmarks/fixtures.test.ts` checks it. |
@@ -45,4 +50,5 @@ Guide for coding agents working **on** paralog.
 - Scope is semantic duplication and overlapping responsibilities only: do not add static detectors (cycles, dead code, complexity).
 - Precision beats recall: when in doubt, do not report.
 - Do not publish to npm; the maintainer does.
+- Tests never call a real model: use a fake `AIProvider` or a local HTTP server.
 - When you change the fixture, keep `annotations.json` in sync; adding a case never weakens an existing one.

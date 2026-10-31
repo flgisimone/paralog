@@ -2,7 +2,9 @@ import { existsSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 import { parseArgs } from "node:util";
 import { embeddingNeighbors, findCandidates, OpenAICompatibleEmbedder, SIGNAL_NAMES, type Candidate } from "../candidates/index.js";
+import { analyze } from "../analyze.js";
 import { loadConfig } from "../config.js";
+import type { Finding } from "../judge/index.js";
 import { extractUnits, type Extraction } from "../extract.js";
 import { VERSION } from "../version.js";
 
@@ -26,14 +28,20 @@ Usage:
   paralog <command> [path] [options]
 
 Commands:
+  check [path]       Find duplicated business logic: candidates judged by the configured
+                     AI provider, findings with verified evidence
   candidates [path]  Rank pairs of units that may implement the same responsibility
                      (deterministic, no AI); path defaults to "."
   units [path]       Print the extracted units as JSON (debugging)
 
 Options:
-  --json         candidates: print JSON (the benchmark format) instead of text
-  --limit <n>    candidates: how many pairs to print (default 20, JSON 200)
-  --no-cache     Do not read or write .paralog/cache
+  --json            check, candidates: print JSON (the benchmark format) instead of text
+  --all             check: also show unverified findings
+  --dry-run         check: list the pairs to judge and the estimated tokens; send nothing
+  --max-pairs <n>   check: pairs to judge at most (default 50)
+  --budget <n>      check: estimated tokens to spend at most on pairs not in the cache
+  --limit <n>       candidates: how many pairs to print (default 20, JSON 200)
+  --no-cache        Do not read or write .paralog/cache
   -h, --help     Show this help
   -v, --version  Show the version
 
@@ -55,6 +63,10 @@ export async function run(argv: readonly string[], io: CliIO): Promise<ExitCode>
         "no-cache": { type: "boolean" },
         json: { type: "boolean" },
         limit: { type: "string" },
+        all: { type: "boolean" },
+        "dry-run": { type: "boolean" },
+        "max-pairs": { type: "string" },
+        budget: { type: "string" },
       },
     });
   } catch (error) {
@@ -76,16 +88,34 @@ export async function run(argv: readonly string[], io: CliIO): Promise<ExitCode>
   const cache = values["no-cache"] !== true;
   if (command === "units") return units(positionals.slice(1), io, { cache });
   if (command === "candidates") {
-    let limit: number | undefined;
-    if (values.limit !== undefined) {
-      limit = Number(values.limit);
-      if (!Number.isInteger(limit) || limit < 1) return fail(io, "--limit must be a positive integer");
-    }
+    const limit = parsePositive(values.limit);
+    if (limit === null) return fail(io, "--limit must be a positive integer");
     return await candidates(positionals.slice(1), io, { cache, json: values.json === true, limit });
+  }
+  if (command === "check") {
+    const maxPairs = parsePositive(values["max-pairs"]);
+    const budget = parsePositive(values.budget);
+    if (maxPairs === null) return fail(io, "--max-pairs must be a positive integer");
+    if (budget === null) return fail(io, "--budget must be a positive integer");
+    return await check(positionals.slice(1), io, {
+      cache,
+      json: values.json === true,
+      all: values.all === true,
+      dryRun: values["dry-run"] === true,
+      maxPairs,
+      budget,
+    });
   }
   io.stderr(`paralog: unknown command '${command}'\n`);
   io.stderr("Run 'paralog --help' for usage.\n");
   return ExitCode.Error;
+}
+
+/** undefined when absent, null when not a positive integer. */
+function parsePositive(value: string | undefined): number | undefined | null {
+  if (value === undefined) return undefined;
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1 ? n : null;
 }
 
 function fail(io: CliIO, message: string): ExitCode {
@@ -178,5 +208,88 @@ async function candidates(
   } else {
     io.stdout(result.candidates.map((c, i) => formatCandidate(c, i + 1)).join("\n\n") + (result.candidates.length > 0 ? "\n" : ""));
   }
+  return ExitCode.Ok;
+}
+
+function formatFinding(finding: Finding): string {
+  const lines = [
+    `[${finding.severity}] ${finding.kind}${finding.status === "confirmed" ? "" : ` (${finding.status})`}  ${finding.id}`,
+    `  ${finding.sharedResponsibility}`,
+    ...finding.members.map((m) => `  - ${m.file}:${String(m.startLine)}-${String(m.endLine)}  ${m.name}`),
+  ];
+  if (finding.evidence.length > 0) {
+    lines.push("  evidence:");
+    for (const e of finding.evidence) {
+      const backed = e.support.length > 0 ? ` backed by ${e.support.slice(0, 3).join(", ")}` : " (not backed by shared code)";
+      lines.push(`    · ${e.claim} (lines ${String(e.linesA[0])}-${String(e.linesA[1])} and ${String(e.linesB[0])}-${String(e.linesB[1])})${backed}`);
+    }
+  }
+  if (finding.differences.length > 0) lines.push(`  differences: ${finding.differences.join("; ")}`);
+  if (finding.suggestion !== "") lines.push(`  suggestion: ${finding.suggestion}`);
+  if (finding.reasons.length > 0) lines.push(`  not confirmed: ${finding.reasons.join("; ")}`);
+  return lines.join("\n");
+}
+
+async function check(
+  args: readonly string[],
+  io: CliIO,
+  options: { cache: boolean; json: boolean; all: boolean; dryRun: boolean; maxPairs: number | undefined; budget: number | undefined },
+): Promise<ExitCode> {
+  if (args.length > 1) return fail(io, "check takes at most one path");
+  const root = resolve(args[0] ?? ".");
+  if (!existsSync(root) || !statSync(root).isDirectory()) return fail(io, `not a directory: ${root}`);
+  const started = performance.now();
+  let analysis;
+  try {
+    analysis = await analyze({
+      root,
+      cache: options.cache,
+      dryRun: options.dryRun,
+      ...(options.maxPairs === undefined ? {} : { maxPairs: options.maxPairs }),
+      ...(options.budget === undefined ? {} : { budget: options.budget }),
+    });
+  } catch (error) {
+    return fail(io, error instanceof Error ? error.message : String(error));
+  }
+  const { extraction, candidates, judgment } = analysis;
+  for (const warning of extraction.discovery.warnings) io.stderr(`warning: ${warning}\n`);
+  const seconds = (performance.now() - started) / 1000;
+
+  if (options.dryRun) {
+    const fresh = judgment.planned.filter((p) => !p.cached);
+    const tokens = fresh.reduce((n, p) => n + p.estimatedTokens, 0);
+    if (options.json) {
+      io.stdout(`${JSON.stringify({ planned: judgment.planned.map((p) => ({ members: [p.candidate.a, p.candidate.b], estimatedTokens: p.estimatedTokens, cached: p.cached })), skipped: judgment.skipped, estimatedTokens: tokens }, null, 2)}\n`);
+    } else {
+      judgment.planned.forEach((p, i) => {
+        io.stdout(`${String(i + 1).padStart(3)}. ${p.cached ? "cached" : `~${String(p.estimatedTokens)} tokens`}  ${p.candidate.a}  ~  ${p.candidate.b}\n`);
+      });
+      io.stdout(`\n${String(judgment.planned.length)} pairs to judge (${String(judgment.planned.length - fresh.length)} cached), about ${String(tokens)} tokens; ${String(judgment.skipped.maxPairs)} left out by --max-pairs, ${String(judgment.skipped.budget)} by --budget\n`);
+    }
+    return ExitCode.Ok;
+  }
+
+  for (const failure of judgment.failures) io.stderr(`warning: could not judge ${failure.a} ~ ${failure.b}: ${failure.error}\n`);
+  const { usage } = judgment;
+  const confirmed = judgment.findings.filter((f) => f.status === "confirmed");
+  const unverified = judgment.findings.filter((f) => f.status === "unverified");
+  io.stderr(
+    `${String(candidates.candidates.length)} candidates, ${String(judgment.judged.length)} pairs judged (${String(usage.cachedPairs)} cached, ${String(usage.inputTokens + usage.outputTokens)} tokens) in ${seconds.toFixed(1)}s\n`,
+  );
+  if (options.json) {
+    const output = {
+      tool: `paralog ${VERSION}`,
+      model: judgment.judged[0]?.model,
+      findings: judgment.findings,
+      usage: { inputTokens: usage.inputTokens, outputTokens: usage.outputTokens, seconds: Math.round(seconds * 10) / 10 },
+      failures: judgment.failures,
+    };
+    io.stdout(`${JSON.stringify(output, null, 2)}\n`);
+    return ExitCode.Ok;
+  }
+  const shown = options.all ? judgment.findings : confirmed;
+  io.stdout(shown.map(formatFinding).join("\n\n") + (shown.length > 0 ? "\n\n" : ""));
+  const hidden = options.all || unverified.length === 0 ? "" : `, ${String(unverified.length)} unverified hidden (--all to show)`;
+  io.stdout(`${String(confirmed.length)} confirmed findings${hidden}\n`);
   return ExitCode.Ok;
 }

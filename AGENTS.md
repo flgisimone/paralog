@@ -39,6 +39,7 @@ Guide for coding agents working **on** paralog.
 ## Rules
 
 - One working session per phase; update the phase **Stato** when it closes.
+- When a phase is finished (`npm run verify` green, status updated), merge its branch into `develop` with `git merge --no-ff` and push `develop`. Phases are never merged half done.
 - Scope is semantic duplication and overlapping responsibilities only: do not add static detectors (cycles, dead code, complexity).
 - Precision beats recall: when in doubt, do not report.
 - Do not publish to npm; the maintainer does.

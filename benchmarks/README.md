@@ -10,6 +10,7 @@ How paralog's precision and recall are measured. The plan is in [`plan/01-benchm
 | `labels/<repo>.json` | Hand labels of the findings reported on a real repository: `true`, `false` or `"unsure"` per finding id. |
 | `schema/` | JSON Schemas of annotations, labels, candidates and findings. |
 | `schema.ts`, `score.ts`, `bench.ts` | Formats, scoring and the `npm run bench` command. |
+| `baselines.ts` | `npm run bench:baselines`: runs existing duplication detectors (pinned versions, via npx) on the fixtures and scores them into `results/baselines/<tool>/`. |
 
 ## Scoring a run
 
@@ -34,4 +35,8 @@ What is measured:
 - **Real repositories**: precision from the labels (`true / (true + false)`); `unsure` and unlabeled findings are excluded and reported.
 - **Cost**: tokens, dollars and seconds from the `usage` of each findings file.
 
-Matching rule: a candidate pair or a finding hits a case when at least two of its members are distinct members of that case. Units are compared as `file#Qualified.name`, with or without the `:kind` suffix. On a fixture, every finding that hits no overlap is a false positive: the fixture is assumed to be fully annotated.
+Matching rule: a candidate pair or a finding hits a case when it contains members of that case from two different *sides*. A member's `side` is optional in the annotations: members with the same side are parts of one implementation (a rule split in two steps), so pairing the two steps with each other is not a hit; a member without a side is a side of its own. Units are compared as `file#Qualified.name`, with or without the `:kind` suffix. On a fixture, every finding that hits no overlap is a false positive: the fixture is assumed to be fully annotated.
+
+## Baselines
+
+`npm run bench:baselines` runs jscpd and Fallow in their most permissive lexical and structural modes, maps every duplicated fragment to the units it overlaps and scores the unit pairs like a paralog run. The embedding-based modes (`jscpd --semantic`, `fallow similar-code`) download a model from huggingface.co on first use and are not in the list yet: run them on a machine that can download the model and add them to `BASELINES` in `baselines.ts`.

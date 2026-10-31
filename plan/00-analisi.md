@@ -17,6 +17,10 @@ Il vantaggio tecnico di paralog: con la Compiler API ha i tipi risolti. Due funz
 | [GitNexus](https://github.com/sec-js/gitnexus) | MIT | Knowledge graph, impact analysis, rename, wiki via MCP | Giudizio sulle sovrapposizioni |
 | dependency-cruiser, knip, madge, jscpd | Open source | Regole di dipendenza, dead code, cicli, copia-incolla | — (si usano accanto, non si rifanno) |
 
+### Aggiornamento del 31/10/2026 (F1-06)
+
+La tabella sopra è superata su un punto: **jscpd 5.x** ha una modalità `--semantic` (cloni Type-4: embedding dei corpi delle funzioni, modello locale o API) e **Fallow 3.x** ha `fallow similar-code` (sovrapposizioni semantiche fra funzioni con un modello di embedding locale; i candidati sono "non verificati" e l'agente li giudica). Il buco nel mercato si restringe: entrambi propongono coppie simili, nessuno dei due (per quanto si vede dalla documentazione) usa i tipi risolti né verifica le evidenze di un giudizio. Il vantaggio da dimostrare con il benchmark diventa: precision più alta a parità di recall grazie ai tipi, alle proprietà toccate e alla verifica delle evidenze, e copertura dei casi di livello 3–4 (responsabilità sparse in più funzioni) che un confronto fra coppie di embedding non vede. Le due modalità vanno misurate in locale (F1-06).
+
 ## Punti critici dell'idea iniziale e risposta nel piano
 
 | Punto critico | Risposta |

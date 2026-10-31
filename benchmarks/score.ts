@@ -1,11 +1,12 @@
 /**
  * Benchmark scorer (F1-05): pure functions from annotations, labels and run outputs to scores.
  *
- * Matching rule: a candidate pair or a finding hits an overlap (or a near-miss) when at least
- * two of its members are distinct members of that case. Units are compared by `file#Name`,
- * so unit ids with or without the `:kind` suffix both work.
+ * Matching rule: a candidate pair or a finding hits an overlap (or a near-miss) when it contains
+ * members of that case from at least two different sides (see `Member.side`; without sides, two
+ * distinct members). Units are compared by `file#Name`, so unit ids with or without the `:kind`
+ * suffix both work.
  */
-import type { Annotations, CandidatesFile, Difficulty, FindingsFile, Labels, Usage } from "./schema.js";
+import type { Annotations, CandidatesFile, Difficulty, FindingsFile, Labels, Member, Usage } from "./schema.js";
 
 export const DEFAULT_KS: readonly number[] = [10, 25, 50, 100, 200];
 const DIFFICULTIES: readonly Difficulty[] = [1, 2, 3, 4];
@@ -17,17 +18,23 @@ export function unitKey(ref: string): string {
 
 interface Case {
   readonly id: string;
-  readonly keys: ReadonlySet<string>;
+  /** Unit key → side. */
+  readonly sides: ReadonlyMap<string, string>;
 }
 
-function toCases(cases: readonly { id: string; members: readonly { file: string; symbol: string }[] }[]): Case[] {
-  return cases.map((c) => ({ id: c.id, keys: new Set(c.members.map((m) => `${m.file}#${m.symbol}`)) }));
+function toCases(cases: readonly { id: string; members: readonly Member[] }[]): Case[] {
+  return cases.map((c) => ({
+    id: c.id,
+    sides: new Map(c.members.map((m) => [`${m.file}#${m.symbol}`, m.side ?? `${m.file}#${m.symbol}`])),
+  }));
 }
 
 /** Ids of the cases hit by a group of units, in annotation order. */
 function hits(cases: readonly Case[], members: readonly string[]): string[] {
   const keys = [...new Set(members.map(unitKey))];
-  return cases.filter((c) => keys.filter((k) => c.keys.has(k)).length >= 2).map((c) => c.id);
+  return cases
+    .filter((c) => new Set(keys.flatMap((k) => c.sides.get(k) ?? [])).size >= 2)
+    .map((c) => c.id);
 }
 
 function ratio(numerator: number, denominator: number): number | null {

@@ -20,7 +20,7 @@ const ANNOTATIONS: Annotations = {
       kind: "responsibility_overlap",
       difficulty: 4,
       rationale: "r",
-      members: [m("a.ts", "l"), m("b.ts", "step1"), m("b.ts", "step2")],
+      members: [m("a.ts", "l"), { ...m("b.ts", "step1"), side: "b" }, { ...m("b.ts", "step2"), side: "b" }],
     },
   ],
   nearMisses: [{ id: "n1", members: [m("a.ts", "Card.charge"), m("a.ts", "Paypal.charge")], reason: "strategies" }],
@@ -46,6 +46,7 @@ describe("scoreCandidates", () => {
       { members: ["a.ts#x", "b.ts#y"] as [string, string] }, // noise
       { members: ["b.ts#step2:function", "a.ts#l:function"] as [string, string] }, // o4 at rank 4, reversed order
       { members: ["a.ts#f:function", "b.ts#g:function"] as [string, string] }, // duplicate of rank 1
+      { members: ["b.ts#step1:function", "b.ts#step2:function"] as [string, string] }, // two steps of one side: no hit
     ],
   };
   const score = scoreCandidates(ANNOTATIONS, candidates, [1, 3, 10]);
@@ -61,6 +62,11 @@ describe("scoreCandidates", () => {
 
   it("counts near-misses in the top K", () => {
     expect(score.recallAtK.map((r) => r.nearMisses)).toEqual([0, 1, 1]);
+  });
+
+  it("does not count two members of the same side as a hit", () => {
+    const steps = { tool: "fake", candidates: [{ members: ["b.ts#step1", "b.ts#step2"] as [string, string] }] };
+    expect(scoreCandidates(ANNOTATIONS, steps, [10]).recallAtK[0]?.recall).toBe(0);
   });
 
   it("reports the rank of the first hit", () => {

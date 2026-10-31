@@ -312,15 +312,18 @@
       "members": [
         {
           "file": "packages/core/src/pricing/discounts.ts",
-          "symbol": "volumeDiscount"
+          "symbol": "volumeDiscount",
+          "side": "core"
         },
         {
           "file": "packages/admin/src/promotions/promotions.ts",
-          "symbol": "isEligibleForVolumeDiscount"
+          "symbol": "isEligibleForVolumeDiscount",
+          "side": "admin"
         },
         {
           "file": "packages/admin/src/promotions/promotions.ts",
-          "symbol": "volumeDiscountAmount"
+          "symbol": "volumeDiscountAmount",
+          "side": "admin"
         }
       ],
       "difficulty": 4,
@@ -332,15 +335,18 @@
       "members": [
         {
           "file": "packages/core/src/orders/order.service.ts",
-          "symbol": "OrderService.cancel"
+          "symbol": "OrderService.cancel",
+          "side": "core"
         },
         {
           "file": "packages/admin/src/orders/order-admin.ts",
-          "symbol": "markOrderCancelled"
+          "symbol": "markOrderCancelled",
+          "side": "admin"
         },
         {
           "file": "packages/admin/src/orders/order-admin.ts",
-          "symbol": "issueRefundForOrder"
+          "symbol": "issueRefundForOrder",
+          "side": "admin"
         }
       ],
       "difficulty": 4,
@@ -352,15 +358,18 @@
       "members": [
         {
           "file": "packages/core/src/auth/session-manager.ts",
-          "symbol": "SessionManager.isExpired"
+          "symbol": "SessionManager.isExpired",
+          "side": "core"
         },
         {
           "file": "packages/admin/src/security/sessions.ts",
-          "symbol": "isIdleTimeout"
+          "symbol": "isIdleTimeout",
+          "side": "admin"
         },
         {
           "file": "packages/admin/src/security/sessions.ts",
-          "symbol": "isPastMaxAge"
+          "symbol": "isPastMaxAge",
+          "side": "admin"
         }
       ],
       "difficulty": 4,
@@ -372,15 +381,18 @@
       "members": [
         {
           "file": "packages/core/src/validation/validators.ts",
-          "symbol": "validateAddress"
+          "symbol": "validateAddress",
+          "side": "core"
         },
         {
           "file": "packages/admin/src/customers/customer-tools.ts",
-          "symbol": "checkPostalCode"
+          "symbol": "checkPostalCode",
+          "side": "admin"
         },
         {
           "file": "packages/admin/src/customers/customer-tools.ts",
-          "symbol": "hasRequiredAddressFields"
+          "symbol": "hasRequiredAddressFields",
+          "side": "admin"
         }
       ],
       "difficulty": 4,
@@ -392,15 +404,18 @@
       "members": [
         {
           "file": "packages/core/src/invoices/invoice.service.ts",
-          "symbol": "InvoiceService.applyLateFee"
+          "symbol": "InvoiceService.applyLateFee",
+          "side": "core"
         },
         {
           "file": "packages/admin/src/billing/invoices.ts",
-          "symbol": "isOverdue"
+          "symbol": "isOverdue",
+          "side": "admin"
         },
         {
           "file": "packages/admin/src/billing/invoices.ts",
-          "symbol": "lateFeeFor"
+          "symbol": "lateFeeFor",
+          "side": "admin"
         }
       ],
       "difficulty": 4,
@@ -412,15 +427,18 @@
       "members": [
         {
           "file": "packages/core/src/users/user.service.ts",
-          "symbol": "UserService.anonymize"
+          "symbol": "UserService.anonymize",
+          "side": "core"
         },
         {
           "file": "packages/admin/src/accounts/privacy.ts",
-          "symbol": "scrubPersonalData"
+          "symbol": "scrubPersonalData",
+          "side": "admin"
         },
         {
           "file": "packages/admin/src/accounts/privacy.ts",
-          "symbol": "deleteUserAddresses"
+          "symbol": "deleteUserAddresses",
+          "side": "admin"
         }
       ],
       "difficulty": 4,

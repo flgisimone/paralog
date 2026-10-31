@@ -17,6 +17,7 @@ Guide for coding agents working **on** paralog.
 | `npm run smoke` | Packs the tarball, installs it in a clean project and runs the CLI. |
 | `npm run build` | Rollup build into `dist/`. |
 | `npm run bench -- --run <dir>` | Scores a benchmark run (see `benchmarks/README.md`). |
+| `npm run bench:baselines` | Runs jscpd and Fallow on the fixtures and scores them (needs network for npx). |
 
 ## Layout
 

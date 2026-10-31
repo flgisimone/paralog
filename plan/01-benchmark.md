@@ -2,12 +2,22 @@
 
 **Obiettivo.** Prima di scrivere euristiche, sapere come si misura il successo: una fixture con sovrapposizioni note, repository reali con commit fissati, uno scorer ripetibile e una baseline dei tool esistenti.
 
-**Stato.** In corso.
+**Stato.** In corso: fatti F1-02, F1-03, F1-05; F1-06 parziale; F1-01 attende la pubblicazione su npm; F1-04 da fare.
 
 - F1-01: repository con README e LICENSE MIT pronto; `package.json` è a `0.0.1`. Manca la pubblicazione su npm, a cura del maintainer (`npm publish` dalla root: pubblica README, LICENSE e la CLI con solo `--version`/`--help`). Dopo la pubblicazione la versione di sviluppo passa a `0.0.2` (o resta non pubblicata fino alla 0.1.0).
 - F1-02: fatto. `benchmarks/schema.ts` (tipi, `validateAnnotations`, `validateLabels`) e `benchmarks/schema/*.schema.json` (draft 2020-12, validati con ajv). Oltre allo schema: ID univoci fra overlap e near-miss, membri distinti nello stesso caso, percorsi relativi e normalizzati. `labels/<repo>.json` richiede anche lo `sha` del commit analizzato. Test in `benchmarks/schema.test.ts`.
 - F1-03: fatto. `benchmarks/fixtures/shop`: workspace pnpm con `packages/core` (dominio e servizi) e `packages/admin` (back office che importa `@shop/core` via `paths`), 47 file, 102 unità. 25 sovrapposizioni (difficoltà 1: 5, 2: 8, 3: 6, 4: 6; 17 `semantic_duplication`, 8 `responsibility_overlap`; i casi di livello 4 hanno tre membri) e 15 near-miss (strategie della stessa interfaccia, classe astratta, mapper, delega fra livelli, operazioni opposte, validazioni e parser su domini diversi). `benchmarks/fixtures.test.ts` verifica: annotazioni valide, `--strict` senza errori in entrambi i package, un'unità estratta per ogni membro annotato. Da tenere presente per F3-05: la fixture è stata scritta dalla stessa persona (o agente) che scriverà le euristiche, quindi la metà di verifica va scelta prima di guardare i segnali.
 - F1-05: fatto. `benchmarks/score.ts` (funzioni pure), `benchmarks/bench.ts` (`npm run bench -- --run <dir> [--all]`, con tsx), formati `candidates.json` e `findings.json` in `benchmarks/schema/`. Struttura della run, metriche e regola di corrispondenza in `benchmarks/README.md`. Regola: una coppia o un finding colpisce un caso se almeno due membri distinti ne fanno parte; per i casi di livello 4 vale quindi anche la coppia dei due passi dello stesso package (concessione da rivedere se gonfia la recall). Test con predizioni finte dal punteggio noto, con un oracolo sulla fixture (precision e recall 100%) e con due esecuzioni che danno lo stesso output.
+- F1-06: fatto per le modalità lessicali e strutturali; **mancano le modalità semantiche**. `npm run bench:baselines` (`benchmarks/baselines.ts`) lancia i tool con versione fissata via npx, collega ogni frammento duplicato alle unità che lo intersecano e valuta le coppie come candidati (ordinate per token o similarità) e come finding confermati. Risultati sulla fixture `shop` (recall dei finding per difficoltà; la precision è quella dei finding sulla fixture):
+
+  | Tool e impostazioni | Coppie | Recall | D1 | D2 | D3 | D4 | Precision | FP su near-miss |
+  |---|---|---|---|---|---|---|---|---|
+  | jscpd 5.4.2 `--mode weak --min-tokens 10 --min-lines 3 --ignore-identifiers --ignore-literals` | 234 | 36% | 2/5 | 3/8 | 1/6 | 3/6 | 3,8% | 8 |
+  | jscpd 5.4.2 `--similarity=0.5 --kind similar` (Type-3, AST) | 8 | 0% | 0/5 | 0/8 | 0/6 | 0/6 | 0% | 3 |
+  | fallow 3.38.1 `dupes --mode semantic --min-tokens 10 --min-lines 3` | 295 | 24% | 2/5 | 1/8 | 1/6 | 2/6 | 2,0% | 13 |
+
+  Con soglie così basse i successi sono quasi sempre frammenti corti e generici (la firma e il `return` iniziale), non il riconoscimento della logica: la precision resta sotto il 4%. Il numero da battere ai livelli 2–4 per i rilevatori lessicali è quindi basso.
+- **Scoperta del 31/10/2026, da gestire prima di F3**: jscpd 5.x ha `--semantic` (cloni Type-4 con embedding del corpo delle funzioni, modello locale CodeRankEmbed o API OpenAI-compatibile) e fallow 3.x ha `similar-code` ("semantic implementation overlap", modello locale jina-embeddings-v2-base-code, con candidati "non verificati" da far giudicare all'agente). È lo stesso spazio di paralog. Qui non si possono eseguire (huggingface.co è bloccato dal proxy della sessione cloud): vanno lanciati in locale e aggiunti a `BASELINES` in `benchmarks/baselines.ts`. Sono loro il riferimento vero: se superano paralog ai livelli 2–4 senza LLM, il gate di F4 va rivisto. Vedi anche [00-analisi.md](00-analisi.md).
 
 ## Decisioni
 

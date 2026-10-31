@@ -24,6 +24,11 @@ export interface Member {
   readonly file: string;
   /** Qualified name of the unit, e.g. `UserService.deactivate`. */
   readonly symbol: string;
+  /**
+   * Members with the same side are parts of one implementation (a rule split in two steps):
+   * a hit needs members from two different sides. Without a side, a member is a side of its own.
+   */
+  readonly side?: string;
 }
 
 export interface Overlap {

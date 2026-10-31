@@ -5,12 +5,31 @@
   "description": "Known overlaps and near-misses inserted in a benchmark fixture.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["fixture", "overlaps", "nearMisses"],
+  "required": [
+    "fixture",
+    "overlaps",
+    "nearMisses"
+  ],
   "properties": {
-    "$schema": { "type": "string" },
-    "fixture": { "type": "string", "minLength": 1 },
-    "overlaps": { "type": "array", "items": { "$ref": "#/$defs/overlap" } },
-    "nearMisses": { "type": "array", "items": { "$ref": "#/$defs/nearMiss" } }
+    "$schema": {
+      "type": "string"
+    },
+    "fixture": {
+      "type": "string",
+      "minLength": 1
+    },
+    "overlaps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/overlap"
+      }
+    },
+    "nearMisses": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/nearMiss"
+      }
+    }
   },
   "$defs": {
     "caseId": {
@@ -21,7 +40,10 @@
     "member": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["file", "symbol"],
+      "required": [
+        "file",
+        "symbol"
+      ],
       "properties": {
         "file": {
           "type": "string",
@@ -32,34 +54,74 @@
           "type": "string",
           "pattern": "^[A-Za-z_$][A-Za-z0-9_$]*(\\.[A-Za-z_$][A-Za-z0-9_$]*)*$",
           "description": "Qualified name of the unit, e.g. UserService.deactivate."
+        },
+        "side": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Members with the same side are parts of one implementation (a rule split in two steps); a hit needs members from two different sides. Members without a side are each a side of their own."
         }
       }
     },
     "members": {
       "type": "array",
       "minItems": 2,
-      "items": { "$ref": "#/$defs/member" }
+      "items": {
+        "$ref": "#/$defs/member"
+      }
     },
     "overlap": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "kind", "members", "difficulty", "rationale"],
+      "required": [
+        "id",
+        "kind",
+        "members",
+        "difficulty",
+        "rationale"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/caseId" },
-        "kind": { "enum": ["semantic_duplication", "responsibility_overlap"] },
-        "members": { "$ref": "#/$defs/members" },
-        "difficulty": { "type": "integer", "minimum": 1, "maximum": 4 },
-        "rationale": { "type": "string", "minLength": 1 }
+        "id": {
+          "$ref": "#/$defs/caseId"
+        },
+        "kind": {
+          "enum": [
+            "semantic_duplication",
+            "responsibility_overlap"
+          ]
+        },
+        "members": {
+          "$ref": "#/$defs/members"
+        },
+        "difficulty": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "nearMiss": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "members", "reason"],
+      "required": [
+        "id",
+        "members",
+        "reason"
+      ],
       "properties": {
-        "id": { "$ref": "#/$defs/caseId" },
-        "members": { "$ref": "#/$defs/members" },
-        "reason": { "type": "string", "minLength": 1 }
+        "id": {
+          "$ref": "#/$defs/caseId"
+        },
+        "members": {
+          "$ref": "#/$defs/members"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     }
   }

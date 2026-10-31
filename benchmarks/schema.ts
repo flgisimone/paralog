@@ -57,6 +57,40 @@ export interface Labels {
   readonly labels: Readonly<Record<string, Label>>;
 }
 
+export interface RankedCandidate {
+  /** Unit ids (`file#Name:kind`) or `file#Name`. */
+  readonly members: readonly [string, string];
+  readonly score?: number;
+}
+
+/** Candidate pairs of one run on one target; the array order is the rank. */
+export interface CandidatesFile {
+  readonly tool: string;
+  readonly candidates: readonly RankedCandidate[];
+}
+
+export type FindingStatus = "confirmed" | "unverified" | "rejected";
+
+export interface ReportedFinding {
+  readonly id: string;
+  readonly status: FindingStatus;
+  readonly members: readonly string[];
+}
+
+export interface Usage {
+  readonly inputTokens?: number;
+  readonly outputTokens?: number;
+  readonly costUsd?: number;
+  readonly seconds?: number;
+}
+
+export interface FindingsFile {
+  readonly tool: string;
+  readonly model?: string;
+  readonly findings: readonly ReportedFinding[];
+  readonly usage?: Usage;
+}
+
 export type ValidationResult<T> =
   | { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly errors: readonly string[] };
@@ -68,6 +102,8 @@ function loadSchema(name: string): object {
 const ajv = new Ajv2020({ allErrors: true, strict: true });
 const annotationsValidator = ajv.compile<Annotations>(loadSchema("annotations.schema.json"));
 const labelsValidator = ajv.compile<Labels>(loadSchema("labels.schema.json"));
+const candidatesValidator = ajv.compile<CandidatesFile>(loadSchema("candidates.schema.json"));
+const findingsValidator = ajv.compile<FindingsFile>(loadSchema("findings.schema.json"));
 
 function formatErrors(errors: readonly ErrorObject[] | null | undefined): string[] {
   return (errors ?? []).map((e) => `${e.instancePath || "/"} ${e.message ?? "is invalid"}`);
@@ -116,4 +152,20 @@ export function validateAnnotations(data: unknown): ValidationResult<Annotations
 
 export function validateLabels(data: unknown): ValidationResult<Labels> {
   return checkSchema(labelsValidator, data);
+}
+
+export function validateCandidates(data: unknown): ValidationResult<CandidatesFile> {
+  return checkSchema(candidatesValidator, data);
+}
+
+export function validateFindings(data: unknown): ValidationResult<FindingsFile> {
+  const result = checkSchema(findingsValidator, data);
+  if (!result.ok) return result;
+  const seen = new Set<string>();
+  const errors: string[] = [];
+  result.value.findings.forEach((f, i) => {
+    if (seen.has(f.id)) errors.push(`/findings/${i}/id duplicate finding id '${f.id}'`);
+    seen.add(f.id);
+  });
+  return errors.length === 0 ? result : { ok: false, errors };
 }

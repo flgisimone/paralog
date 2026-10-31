@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flgisimone/paralog/benchmarks/schema/candidates.schema.json",
+  "title": "paralog benchmark candidates",
+  "description": "Ranked candidate pairs produced by a tool on one benchmark target. Array order is the rank.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tool", "candidates"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "tool": { "type": "string", "minLength": 1 },
+    "candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["members"],
+        "properties": {
+          "members": { "$ref": "#/$defs/pair" },
+          "score": { "type": "number" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "unitRef": {
+      "type": "string",
+      "pattern": "^[^#]+#[^#]+$",
+      "description": "Unit id (file#Qualified.name:kind) or file#Qualified.name."
+    },
+    "pair": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "$ref": "#/$defs/unitRef" } }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/flgisimone/paralog/benchmarks/schema/findings.schema.json",
+  "title": "paralog benchmark findings",
+  "description": "Findings produced by a tool on one benchmark target, with the cost of the run.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tool", "findings"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "tool": { "type": "string", "minLength": 1 },
+    "model": { "type": "string" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "status", "members"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["confirmed", "unverified", "rejected"] },
+          "members": {
+            "type": "array",
+            "minItems": 2,
+            "items": { "type": "string", "pattern": "^[^#]+#[^#]+$" }
+          }
+        }
+      }
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "inputTokens": { "type": "integer", "minimum": 0 },
+        "outputTokens": { "type": "integer", "minimum": 0 },
+        "costUsd": { "type": "number", "minimum": 0 },
+        "seconds": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}

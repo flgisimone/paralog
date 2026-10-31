@@ -16,6 +16,7 @@ Guide for coding agents working **on** paralog.
 | `npm test` | Vitest only. |
 | `npm run smoke` | Packs the tarball, installs it in a clean project and runs the CLI. |
 | `npm run build` | Rollup build into `dist/`. |
+| `npm run bench -- --run <dir>` | Scores a benchmark run (see `benchmarks/README.md`). |
 
 ## Layout
 

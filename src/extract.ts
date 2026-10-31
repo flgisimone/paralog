@@ -243,6 +243,26 @@ interface UnitContext {
   readonly checker: TypeChecker;
 }
 
+function isObjectLiteralMember(node: Node): boolean {
+  return (
+    Node.isPropertyAssignment(node) ||
+    Node.isShorthandPropertyAssignment(node) ||
+    (Node.isMethodDeclaration(node) && Node.isObjectLiteralExpression(node.getParent()))
+  );
+}
+
+function isFunctionBody(node: Node): boolean {
+  return (
+    Node.isFunctionDeclaration(node) ||
+    Node.isFunctionExpression(node) ||
+    Node.isArrowFunction(node) ||
+    Node.isMethodDeclaration(node) ||
+    Node.isGetAccessorDeclaration(node) ||
+    Node.isSetAccessorDeclaration(node) ||
+    Node.isConstructorDeclaration(node)
+  );
+}
+
 /** Owner-qualified names of the declarations of a property, restricted to project code. */
 function propertyOwners(declarations: readonly Node[]): string[] {
   return declarations
@@ -253,6 +273,8 @@ function propertyOwners(declarations: readonly Node[]): string[] {
         const cls = d.getParentOrThrow().getParentOrThrow();
         return `${qualifiedName(cls)}.${d.getName()}`;
       }
+      // Members of object literals built inside a function are local values, not domain properties.
+      if (isObjectLiteralMember(d) && d.getFirstAncestor(isFunctionBody) !== undefined) return "";
       return qualifiedName(d);
     })
     .filter((name) => name.includes("."));
@@ -312,7 +334,8 @@ function callTarget(ctx: UnitContext, call: CallExpression | NewExpression): str
   const name = qualifiedName(target);
   if (name === "") return undefined;
   const pkg = packageName(target.getSourceFile());
-  return pkg === undefined ? name : `${pkg}#${name}`;
+  // Globals are declared as `interface ObjectConstructor { assign(...) }`: print them as `Object.assign`.
+  return pkg === undefined ? name.replace(/^(\w+)Constructor\./, "$1.") : `${pkg}#${name}`;
 }
 
 function isCallee(node: Node): boolean {

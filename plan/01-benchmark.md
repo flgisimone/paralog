@@ -6,6 +6,7 @@
 
 - F1-01: repository con README e LICENSE MIT pronto; `package.json` è a `0.0.1`. Manca la pubblicazione su npm, a cura del maintainer (`npm publish` dalla root: pubblica README, LICENSE e la CLI con solo `--version`/`--help`). Dopo la pubblicazione la versione di sviluppo passa a `0.0.2` (o resta non pubblicata fino alla 0.1.0).
 - F1-02: fatto. `benchmarks/schema.ts` (tipi, `validateAnnotations`, `validateLabels`) e `benchmarks/schema/*.schema.json` (draft 2020-12, validati con ajv). Oltre allo schema: ID univoci fra overlap e near-miss, membri distinti nello stesso caso, percorsi relativi e normalizzati. `labels/<repo>.json` richiede anche lo `sha` del commit analizzato. Test in `benchmarks/schema.test.ts`.
+- F1-03: fatto. `benchmarks/fixtures/shop`: workspace pnpm con `packages/core` (dominio e servizi) e `packages/admin` (back office che importa `@shop/core` via `paths`), 47 file, 102 unità. 25 sovrapposizioni (difficoltà 1: 5, 2: 8, 3: 6, 4: 6; 17 `semantic_duplication`, 8 `responsibility_overlap`; i casi di livello 4 hanno tre membri) e 15 near-miss (strategie della stessa interfaccia, classe astratta, mapper, delega fra livelli, operazioni opposte, validazioni e parser su domini diversi). `benchmarks/fixtures.test.ts` verifica: annotazioni valide, `--strict` senza errori in entrambi i package, un'unità estratta per ogni membro annotato. Da tenere presente per F3-05: la fixture è stata scritta dalla stessa persona (o agente) che scriverà le euristiche, quindi la metà di verifica va scelta prima di guardare i segnali.
 
 ## Decisioni
 

@@ -1,0 +1,642 @@
+{
+  "$schema": "../../schema/annotations.schema.json",
+  "fixture": "shop",
+  "overlaps": [
+    {
+      "id": "email-format",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/validation/validators.ts",
+          "symbol": "isValidEmail"
+        },
+        {
+          "file": "packages/admin/src/customers/customer-tools.ts",
+          "symbol": "checkEmailFormat"
+        }
+      ],
+      "difficulty": 1,
+      "rationale": "Same e-mail regex and the same 254-character limit."
+    },
+    {
+      "id": "price-format",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/util/money.ts",
+          "symbol": "formatPrice"
+        },
+        {
+          "file": "packages/admin/src/reports/format.ts",
+          "symbol": "renderAmount"
+        }
+      ],
+      "difficulty": 1,
+      "rationale": "Both format cents as a currency string with Intl.NumberFormat en-IE; the admin copy only caches the formatter."
+    },
+    {
+      "id": "calendar-days",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/util/dates.ts",
+          "symbol": "daysBetween"
+        },
+        {
+          "file": "packages/admin/src/support/tickets.ts",
+          "symbol": "diffInDays"
+        }
+      ],
+      "difficulty": 1,
+      "rationale": "Both count whole UTC calendar days between two dates with Date.UTC."
+    },
+    {
+      "id": "order-cancellable",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/orders/order.service.ts",
+          "symbol": "OrderService.canBeCancelled"
+        },
+        {
+          "file": "packages/admin/src/orders/order-admin.ts",
+          "symbol": "isOrderCancellable"
+        }
+      ],
+      "difficulty": 1,
+      "rationale": "The same cancellation rule: pending or paid and not shipped."
+    },
+    {
+      "id": "mask-card",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/payments/card-utils.ts",
+          "symbol": "maskCardNumber"
+        },
+        {
+          "file": "packages/admin/src/support/tickets.ts",
+          "symbol": "hideCardDigits"
+        }
+      ],
+      "difficulty": 1,
+      "rationale": "Both keep the last four digits behind the same mask."
+    },
+    {
+      "id": "slug",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/util/strings.ts",
+          "symbol": "slugify"
+        },
+        {
+          "file": "packages/admin/src/catalog/catalog.ts",
+          "symbol": "toUrlSegment"
+        }
+      ],
+      "difficulty": 2,
+      "rationale": "Product URL slug: replace-based in core, split/filter/join in admin."
+    },
+    {
+      "id": "vat-rates",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/pricing/tax.ts",
+          "symbol": "calculateTax"
+        },
+        {
+          "file": "packages/admin/src/billing/tax.ts",
+          "symbol": "vatFor"
+        }
+      ],
+      "difficulty": 2,
+      "rationale": "Same VAT rates per country and the same Italian default: lookup table versus switch."
+    },
+    {
+      "id": "order-amount",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/cart/cart.ts",
+          "symbol": "cartTotal"
+        },
+        {
+          "file": "packages/admin/src/orders/order-admin.ts",
+          "symbol": "OrderAdmin.computeOrderAmount"
+        }
+      ],
+      "difficulty": 2,
+      "rationale": "Sum of quantity times unit price over the lines: reduce versus indexed loop."
+    },
+    {
+      "id": "active-customers",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/users/user-queries.ts",
+          "symbol": "countActiveUsers"
+        },
+        {
+          "file": "packages/admin/src/reports/sales-report.ts",
+          "symbol": "activeCustomerCount"
+        }
+      ],
+      "difficulty": 2,
+      "rationale": "Active customers counted with filter().length versus a loop with continue."
+    },
+    {
+      "id": "orders-by-customer",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/orders/order-queries.ts",
+          "symbol": "groupOrdersByCustomer"
+        },
+        {
+          "file": "packages/admin/src/reports/sales-report.ts",
+          "symbol": "ordersPerCustomer"
+        }
+      ],
+      "difficulty": 2,
+      "rationale": "Grouping orders by customer: reduce into a Map versus a loop into a record."
+    },
+    {
+      "id": "low-stock",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/inventory/stock.service.ts",
+          "symbol": "StockService.findLowStock"
+        },
+        {
+          "file": "packages/admin/src/catalog/catalog.ts",
+          "symbol": "productsToRestock"
+        }
+      ],
+      "difficulty": 2,
+      "rationale": "Products at or below the reorder level: filter versus loop, comparison written the other way round."
+    },
+    {
+      "id": "phone-normalization",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/util/strings.ts",
+          "symbol": "normalizePhone"
+        },
+        {
+          "file": "packages/admin/src/customers/customer-tools.ts",
+          "symbol": "cleanPhoneNumber"
+        }
+      ],
+      "difficulty": 2,
+      "rationale": "Phone to E.164 with the 00 and +39 rules: regular expressions versus a character loop."
+    },
+    {
+      "id": "coupon-validity",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/pricing/discounts.ts",
+          "symbol": "isCouponValid"
+        },
+        {
+          "file": "packages/admin/src/promotions/promotions.ts",
+          "symbol": "couponIsUsable"
+        }
+      ],
+      "difficulty": 2,
+      "rationale": "Same four coupon conditions: early returns versus one boolean expression with named parts."
+    },
+    {
+      "id": "close-account",
+      "kind": "responsibility_overlap",
+      "members": [
+        {
+          "file": "packages/core/src/users/user.service.ts",
+          "symbol": "UserService.deactivate"
+        },
+        {
+          "file": "packages/admin/src/accounts/account-manager.ts",
+          "symbol": "AccountManager.closeAccount"
+        }
+      ],
+      "difficulty": 3,
+      "rationale": "Closing an account: status inactive, deactivation date, sessions revoked, the same e-mail subject."
+    },
+    {
+      "id": "shipping-price",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/shipping/shipping-calculator.ts",
+          "symbol": "ShippingCalculator.quote"
+        },
+        {
+          "file": "packages/admin/src/shipping/estimate.ts",
+          "symbol": "estimateShippingCost"
+        }
+      ],
+      "difficulty": 3,
+      "rationale": "Same weight tiers, foreign surcharge and free shipping in Italy above 50 euro; class method on weights versus function on an order."
+    },
+    {
+      "id": "invoice-from-order",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/invoices/invoice-builder.ts",
+          "symbol": "InvoiceBuilder.build"
+        },
+        {
+          "file": "packages/admin/src/billing/invoices.ts",
+          "symbol": "createInvoiceFromOrder"
+        }
+      ],
+      "difficulty": 3,
+      "rationale": "Same invoice number format, lines, VAT and 30-day payment terms."
+    },
+    {
+      "id": "password-rules",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/auth/password-policy.ts",
+          "symbol": "PasswordPolicy.validate"
+        },
+        {
+          "file": "packages/admin/src/security/passwords.ts",
+          "symbol": "checkPasswordStrength"
+        }
+      ],
+      "difficulty": 3,
+      "rationale": "Same five password rules and the same list of common passwords; class method versus rule table."
+    },
+    {
+      "id": "restock-order",
+      "kind": "responsibility_overlap",
+      "members": [
+        {
+          "file": "packages/core/src/inventory/stock.service.ts",
+          "symbol": "StockService.release"
+        },
+        {
+          "file": "packages/admin/src/inventory/returns.ts",
+          "symbol": "returnItemsToInventory"
+        }
+      ],
+      "difficulty": 3,
+      "rationale": "Both put the units of an order back into product stock."
+    },
+    {
+      "id": "loyalty-points",
+      "kind": "semantic_duplication",
+      "members": [
+        {
+          "file": "packages/core/src/pricing/loyalty.ts",
+          "symbol": "LoyaltyService.pointsFor"
+        },
+        {
+          "file": "packages/admin/src/loyalty/rewards.ts",
+          "symbol": "computeRewardPoints"
+        }
+      ],
+      "difficulty": 3,
+      "rationale": "One point per euro with the same tier multipliers and no points for cancelled or refunded orders."
+    },
+    {
+      "id": "volume-discount",
+      "kind": "responsibility_overlap",
+      "members": [
+        {
+          "file": "packages/core/src/pricing/discounts.ts",
+          "symbol": "volumeDiscount"
+        },
+        {
+          "file": "packages/admin/src/promotions/promotions.ts",
+          "symbol": "isEligibleForVolumeDiscount"
+        },
+        {
+          "file": "packages/admin/src/promotions/promotions.ts",
+          "symbol": "volumeDiscountAmount"
+        }
+      ],
+      "difficulty": 4,
+      "rationale": "10% for active gold customers above 100 euro: one function in core, eligibility and amount split in admin."
+    },
+    {
+      "id": "cancel-order",
+      "kind": "responsibility_overlap",
+      "members": [
+        {
+          "file": "packages/core/src/orders/order.service.ts",
+          "symbol": "OrderService.cancel"
+        },
+        {
+          "file": "packages/admin/src/orders/order-admin.ts",
+          "symbol": "markOrderCancelled"
+        },
+        {
+          "file": "packages/admin/src/orders/order-admin.ts",
+          "symbol": "issueRefundForOrder"
+        }
+      ],
+      "difficulty": 4,
+      "rationale": "Cancelling an order with refund: one method in core, status change and refund split in admin."
+    },
+    {
+      "id": "session-expiry",
+      "kind": "responsibility_overlap",
+      "members": [
+        {
+          "file": "packages/core/src/auth/session-manager.ts",
+          "symbol": "SessionManager.isExpired"
+        },
+        {
+          "file": "packages/admin/src/security/sessions.ts",
+          "symbol": "isIdleTimeout"
+        },
+        {
+          "file": "packages/admin/src/security/sessions.ts",
+          "symbol": "isPastMaxAge"
+        }
+      ],
+      "difficulty": 4,
+      "rationale": "Session expiry after 30 idle minutes, 24 hours or revocation: one method versus two checks."
+    },
+    {
+      "id": "address-validation",
+      "kind": "responsibility_overlap",
+      "members": [
+        {
+          "file": "packages/core/src/validation/validators.ts",
+          "symbol": "validateAddress"
+        },
+        {
+          "file": "packages/admin/src/customers/customer-tools.ts",
+          "symbol": "checkPostalCode"
+        },
+        {
+          "file": "packages/admin/src/customers/customer-tools.ts",
+          "symbol": "hasRequiredAddressFields"
+        }
+      ],
+      "difficulty": 4,
+      "rationale": "Address validation with the same postal code patterns: one function versus postal code and required fields checked separately."
+    },
+    {
+      "id": "late-fee",
+      "kind": "responsibility_overlap",
+      "members": [
+        {
+          "file": "packages/core/src/invoices/invoice.service.ts",
+          "symbol": "InvoiceService.applyLateFee"
+        },
+        {
+          "file": "packages/admin/src/billing/invoices.ts",
+          "symbol": "isOverdue"
+        },
+        {
+          "file": "packages/admin/src/billing/invoices.ts",
+          "symbol": "lateFeeFor"
+        }
+      ],
+      "difficulty": 4,
+      "rationale": "2% late fee after 30 days on unpaid invoices: one method versus overdue check and fee amount."
+    },
+    {
+      "id": "erase-personal-data",
+      "kind": "responsibility_overlap",
+      "members": [
+        {
+          "file": "packages/core/src/users/user.service.ts",
+          "symbol": "UserService.anonymize"
+        },
+        {
+          "file": "packages/admin/src/accounts/privacy.ts",
+          "symbol": "scrubPersonalData"
+        },
+        {
+          "file": "packages/admin/src/accounts/privacy.ts",
+          "symbol": "deleteUserAddresses"
+        }
+      ],
+      "difficulty": 4,
+      "rationale": "GDPR erasure with the same replacement values: one method versus scrubbing and address removal."
+    }
+  ],
+  "nearMisses": [
+    {
+      "id": "payment-strategies",
+      "members": [
+        {
+          "file": "packages/core/src/payments/payment-methods.ts",
+          "symbol": "CardPayment.charge"
+        },
+        {
+          "file": "packages/core/src/payments/payment-methods.ts",
+          "symbol": "PaypalPayment.charge"
+        }
+      ],
+      "reason": "Two strategies of the PaymentMethod interface: polymorphism on purpose."
+    },
+    {
+      "id": "report-exporters",
+      "members": [
+        {
+          "file": "packages/admin/src/exports/exporters.ts",
+          "symbol": "CsvExporter.export"
+        },
+        {
+          "file": "packages/admin/src/exports/exporters.ts",
+          "symbol": "JsonExporter.export"
+        }
+      ],
+      "reason": "Two implementations of the ReportExporter abstract class with different output formats."
+    },
+    {
+      "id": "dto-mappers",
+      "members": [
+        {
+          "file": "packages/core/src/mappers/dto.ts",
+          "symbol": "toUserDto"
+        },
+        {
+          "file": "packages/core/src/mappers/dto.ts",
+          "symbol": "toOrderDto"
+        }
+      ],
+      "reason": "Mappers of different entities: same shape, different domain."
+    },
+    {
+      "id": "identifier-validators",
+      "members": [
+        {
+          "file": "packages/core/src/validation/validators.ts",
+          "symbol": "validateUsername"
+        },
+        {
+          "file": "packages/core/src/validation/validators.ts",
+          "symbol": "validateSku"
+        }
+      ],
+      "reason": "Similar validation style on different domains with different rules."
+    },
+    {
+      "id": "date-formats",
+      "members": [
+        {
+          "file": "packages/core/src/util/dates.ts",
+          "symbol": "formatDate"
+        },
+        {
+          "file": "packages/core/src/util/dates.ts",
+          "symbol": "formatDateTime"
+        }
+      ],
+      "reason": "Two different output formats for different uses (invoices and audit logs)."
+    },
+    {
+      "id": "status-delegation",
+      "members": [
+        {
+          "file": "packages/admin/src/orders/order-admin.ts",
+          "symbol": "OrderAdmin.updateStatus"
+        },
+        {
+          "file": "packages/core/src/orders/order.service.ts",
+          "symbol": "OrderService.updateStatus"
+        }
+      ],
+      "reason": "The admin method only delegates to the core service: an adapter between layers."
+    },
+    {
+      "id": "sum-stock-vs-cart",
+      "members": [
+        {
+          "file": "packages/core/src/inventory/stock.service.ts",
+          "symbol": "sumStock"
+        },
+        {
+          "file": "packages/core/src/cart/cart.ts",
+          "symbol": "cartTotal"
+        }
+      ],
+      "reason": "Generic reductions over different domains: units in stock versus money in a cart."
+    },
+    {
+      "id": "user-predicates",
+      "members": [
+        {
+          "file": "packages/core/src/users/user-queries.ts",
+          "symbol": "isAdmin"
+        },
+        {
+          "file": "packages/core/src/users/user-queries.ts",
+          "symbol": "isActive"
+        }
+      ],
+      "reason": "Different predicates on the same entity."
+    },
+    {
+      "id": "activate-deactivate",
+      "members": [
+        {
+          "file": "packages/core/src/users/user.service.ts",
+          "symbol": "UserService.activate"
+        },
+        {
+          "file": "packages/core/src/users/user.service.ts",
+          "symbol": "UserService.deactivate"
+        }
+      ],
+      "reason": "Opposite operations on the same entity."
+    },
+    {
+      "id": "rounding-rules",
+      "members": [
+        {
+          "file": "packages/core/src/util/money.ts",
+          "symbol": "roundToCents"
+        },
+        {
+          "file": "packages/core/src/util/money.ts",
+          "symbol": "roundToNearest5Cents"
+        }
+      ],
+      "reason": "Different rounding rules for different purposes."
+    },
+    {
+      "id": "notifier-channels",
+      "members": [
+        {
+          "file": "packages/core/src/notifications/notifiers.ts",
+          "symbol": "EmailNotifier.send"
+        },
+        {
+          "file": "packages/core/src/notifications/notifiers.ts",
+          "symbol": "SmsNotifier.send"
+        }
+      ],
+      "reason": "Two channels implementing the Notifier interface."
+    },
+    {
+      "id": "csv-row-parsers",
+      "members": [
+        {
+          "file": "packages/admin/src/imports/parsers.ts",
+          "symbol": "parseOrderCsvRow"
+        },
+        {
+          "file": "packages/admin/src/imports/parsers.ts",
+          "symbol": "parseProductCsvRow"
+        }
+      ],
+      "reason": "Parsers of different record types with the same style."
+    },
+    {
+      "id": "lookup-by-id",
+      "members": [
+        {
+          "file": "packages/core/src/users/user.service.ts",
+          "symbol": "UserService.getUserById"
+        },
+        {
+          "file": "packages/core/src/catalog/product.service.ts",
+          "symbol": "ProductService.getProductById"
+        }
+      ],
+      "reason": "Repository lookups of different entities."
+    },
+    {
+      "id": "price-tables",
+      "members": [
+        {
+          "file": "packages/core/src/pricing/tiered-pricing.ts",
+          "symbol": "TieredPricing.priceFor"
+        },
+        {
+          "file": "packages/core/src/shipping/shipping-calculator.ts",
+          "symbol": "ShippingCalculator.quote"
+        }
+      ],
+      "reason": "Tier tables for different things: wholesale unit prices versus parcel weights."
+    },
+    {
+      "id": "order-event-messages",
+      "members": [
+        {
+          "file": "packages/core/src/notifications/order-events.ts",
+          "symbol": "onOrderPaid"
+        },
+        {
+          "file": "packages/core/src/notifications/order-events.ts",
+          "symbol": "onOrderShipped"
+        }
+      ],
+      "reason": "Handlers of different events that only share the notification call."
+    }
+  ]
+}

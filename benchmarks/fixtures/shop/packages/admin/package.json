@@ -1,0 +1,1 @@
+{ "name": "@shop/admin", "private": true, "main": "src/index.ts", "dependencies": { "@shop/core": "workspace:*" } }

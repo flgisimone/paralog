@@ -24,7 +24,10 @@ Guide for coding agents working **on** paralog.
 | `src/index.ts` | Library entry point (`paralog`). |
 | `src/mcp/` | MCP server entry point (`paralog/mcp`). |
 | `src/cli/` | CLI (`paralog` bin); `main.ts` is the process wrapper, `index.ts` is testable. |
+| `src/config.ts`, `src/discovery.ts` | `paralog.config.json` and tsconfig discovery. |
+| `src/extract.ts` | Unit extraction with ts-morph. |
 | `benchmarks/` | Benchmark formats, fixtures, real repositories, scorer. |
+| `benchmarks/fixtures/shop/` | Synthetic fixture; `annotations.json` lists the expected overlaps and near-misses. Not type-checked or linted by the repository config: `benchmarks/fixtures.test.ts` checks it. |
 | `tests/` | Unit and integration tests. |
 | `plan/` | Backlog in Italian. |
 
@@ -34,3 +37,4 @@ Guide for coding agents working **on** paralog.
 - Scope is semantic duplication and overlapping responsibilities only: do not add static detectors (cycles, dead code, complexity).
 - Precision beats recall: when in doubt, do not report.
 - Do not publish to npm; the maintainer does.
+- When you change the fixture, keep `annotations.json` in sync; adding a case never weakens an existing one.

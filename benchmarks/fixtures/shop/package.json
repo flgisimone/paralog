@@ -1,0 +1,5 @@
+{
+  "name": "shop",
+  "private": true,
+  "description": "paralog benchmark fixture: a small shop with overlaps inserted on purpose. See annotations.json."
+}

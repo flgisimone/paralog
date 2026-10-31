@@ -204,3 +204,20 @@ export class UserService {
     expect(hash(original.replace('"active"', '"enabled"'))).not.toBe(base);
   });
 });
+
+describe("extractUnits: noise filters", () => {
+  it("ignores members of object literals built inside a function and names globals by their value", () => {
+    const units = extract({
+      "src/merge.ts": `import type { User } from "./model.js";
+const DEFAULTS = { status: "active" as const };
+export function merge(user: User): User {
+  const patch = { status: "inactive" as const, note: "x" };
+  void patch.note;
+  return Object.assign({}, user, patch, { email: DEFAULTS.status });
+}`,
+    });
+    const merge = unit(units, "src/merge.ts#merge:function");
+    expect(merge.touchedProperties).toEqual(["DEFAULTS.status"]);
+    expect(merge.calls).toEqual(["Object.assign"]);
+  });
+});

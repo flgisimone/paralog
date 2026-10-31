@@ -25,7 +25,7 @@ import { loadConfig, type ParalogConfig } from "./config.js";
 import { discoverProjects, toPosix, type Discovery } from "./discovery.js";
 
 /** Bumped whenever the extracted data changes, so that caches built by older versions are discarded. */
-export const EXTRACTOR_VERSION = 1;
+export const EXTRACTOR_VERSION = 3;
 
 export type UnitKind = "function" | "arrow" | "method" | "getter" | "setter" | "constructor";
 
@@ -53,8 +53,14 @@ export interface CodeUnit {
   readonly literals: readonly string[];
   /** Interface or base-class members this unit implements or overrides (`PaymentMethod.charge`). */
   readonly implements: readonly string[];
+  /** Project types in the parameters and the return type, unwrapped from arrays, promises and unions (`User`). */
+  readonly domainTypes: readonly string[];
   /** Number of statements in the body (an expression body counts as one). */
   readonly statements: number;
+  /** Number of syntax nodes in the body: the size used to skip trivial units. */
+  readonly nodes: number;
+  /** Shape of the body: counts of parent→child syntax kinds, names and values left out. */
+  readonly shape: Readonly<Record<string, number>>;
   /** Hash of the unit's tokens: ignores comments, whitespace and position. */
   readonly bodyHash: string;
 }
@@ -121,8 +127,9 @@ function ownName(node: Node): string | undefined {
     const nameNode = node.getNameNode();
     return Node.isIdentifier(nameNode) ? nameNode.getText() : undefined;
   }
+  // declare module "timers" { ... } → timers
+  if (Node.isModuleDeclaration(node)) return node.getName().replace(/^["']|["']$/g, "");
   if (
-    Node.isModuleDeclaration(node) ||
     Node.isInterfaceDeclaration(node) ||
     Node.isTypeAliasDeclaration(node) ||
     Node.isEnumDeclaration(node)
@@ -388,6 +395,55 @@ function implementedMembers(fn: FunctionLike): string[] {
   return owners.filter((o) => o !== own);
 }
 
+const TYPE_DECLARATION_KINDS = new Set([
+  ts.SyntaxKind.InterfaceDeclaration,
+  ts.SyntaxKind.ClassDeclaration,
+  ts.SyntaxKind.TypeAliasDeclaration,
+  ts.SyntaxKind.EnumDeclaration,
+]);
+
+/** Named project types reachable from a type through arrays, unions, intersections and type arguments. */
+function collectDomainTypes(type: Type, out: Set<string>, depth = 0): void {
+  if (depth > 4) return;
+  const symbol = type.getAliasSymbol() ?? type.getSymbol();
+  for (const declaration of symbol?.getDeclarations() ?? []) {
+    if (TYPE_DECLARATION_KINDS.has(declaration.getKind()) && isProjectDeclaration(declaration)) {
+      out.add(qualifiedName(declaration));
+      break;
+    }
+  }
+  const inner = [
+    ...type.getAliasTypeArguments(),
+    ...type.getTypeArguments(),
+    ...type.getUnionTypes(),
+    ...type.getIntersectionTypes(),
+  ];
+  const element = type.getArrayElementType();
+  if (element !== undefined) inner.push(element);
+  for (const t of inner) collectDomainTypes(t, out, depth + 1);
+}
+
+function domainTypesOf(fn: FunctionLike): string[] {
+  const out = new Set<string>();
+  for (const parameter of fn.getParameters()) collectDomainTypes(parameter.getType(), out);
+  if (!Node.isConstructorDeclaration(fn)) collectDomainTypes(fn.getReturnType(), out);
+  return [...out].sort();
+}
+
+function shapeOf(fn: FunctionLike): { nodes: number; shape: Record<string, number> } {
+  const body = fn.getBody();
+  const shape: Record<string, number> = {};
+  let nodes = 0;
+  body?.forEachDescendant((node) => {
+    nodes++;
+    const parent = node.getParent();
+    if (parent === undefined) return;
+    const key = `${parent.getKindName()}>${node.getKindName()}`;
+    shape[key] = (shape[key] ?? 0) + 1;
+  });
+  return { nodes, shape: Object.fromEntries(Object.entries(shape).sort(([a], [b]) => (a < b ? -1 : 1))) };
+}
+
 function countStatements(fn: FunctionLike): number {
   const body = fn.getBody();
   if (body === undefined) return 0;
@@ -500,7 +556,9 @@ function extractUnit(ctx: UnitContext, fn: FunctionLike): CodeUnit {
     calls: sorted(calls),
     literals: sorted(literals),
     implements: sorted(implementedMembers(fn)),
+    domainTypes: domainTypesOf(fn),
     statements: countStatements(fn),
+    ...shapeOf(fn),
     bodyHash: hashTokens(fn.compilerNode, sourceFile.compilerNode),
   };
 }

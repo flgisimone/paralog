@@ -2,7 +2,44 @@
 
 **Obiettivo.** Da tutte le unità, ottenere una lista corta di coppie candidate che contenga quasi tutte le sovrapposizioni vere, senza IA e senza confrontare tutte le coppie.
 
-**Stato.** Da iniziare.
+**Stato.** Fatta. Note di implementazione:
+
+- **Dati in più dall'estrattore** (`EXTRACTOR_VERSION` 3): `domainTypes` (tipi del progetto nella firma, scartando `Promise`, array, unioni e argomenti generici), `nodes` (dimensione del corpo in nodi AST) e `shape` (conteggi delle coppie padre→figlio di tipi di nodo, senza nomi né valori).
+- **F3-01, segnali** (`src/candidates/signals.ts`, `names.ts`):
+  - `types`, `properties`, `calls`, `literals` e `names` sono Jaccard pesati con l'IDF del repository, quindi una caratteristica rara condivisa vale più di una comune. `types` unisce i tipi della firma e quelli delle proprietà toccate.
+  - Le proprietà della classe che contiene l'unità (servizi iniettati) non contano.
+  - `shape` è il coseno fra le forme.
+  - Ogni candidato salva segnali e cose in comune (`shared`).
+  - I sinonimi sono 26 gruppi generici: da quelli scritti all'inizio ho tolto le parole scelte pensando alla fixture (`usable`, `segment`, `dunning`…).
+- **F3-02, filtro delle coppie**: indice invertito su tipi, proprietà, chiamate, letterali e token del nome. Le chiavi presenti in più di max(20, 2% delle unità) sono ignorate. Una coppia si confronta solo se condivide due chiavi, oppure una chiave rara (in al massimo 5 unità).
+
+  | Repository | Coppie confrontate |
+  |---|---|
+  | excalidraw | 0,90% |
+  | hoppscotch | 0,53% |
+  | zod | 0,90% |
+  | trpc | 2,0% (piccolo, molti pacchetti simili) |
+
+  Sulla fixture nessuna sovrapposizione è persa dal filtro (test).
+- **F3-03, esclusioni**: getter, setter, costruttori, unità sotto i 15 nodi, coppie che implementano lo stesso membro di interfaccia o classe astratta, coppie con chiamata diretta. Nessun near-miss "strategia" o "mapper" fra i primi 100 (test).
+- **F3-04, embedding**: fatto il codice, **manca la misura**.
+  - Ci sono `Embedder`, l'adattatore `OpenAICompatibleEmbedder` (anche per Ollama), la cache per `bodyHash` e la ricerca dei 5 vicini, aggiunti alle coppie confrontate con il segnale `embedding` (peso 0,2, gli altri segnali scalati a 0,8).
+  - Si configurano in `paralog.config.json`; la chiave API passa solo da una variabile d'ambiente.
+  - Testato con un server HTTP locale. La recall "con e senza embedding" va misurata in locale con un modello vero, come le modalità semantiche di F1-06.
+- **F3-05, ranking**: somma pesata con pesi fissati a priori (proprietà 0,25, chiamate 0,2, tipi 0,15, letterali 0,15, forma 0,15, nomi 0,1). La metà di taratura era già al 100% entro i primi 50, quindi non c'era niente da ottimizzare e i pesi non sono stati toccati. Risultati sulla fixture (`npm run bench`):
+
+  | K | Recall | Metà di taratura | Metà di verifica | Near-miss nei primi K |
+  |---|---|---|---|---|
+  | 10 | 32% | 38,5% | 25% | 1 |
+  | 25 | 64% | 76,9% | 50% | 1 |
+  | 50 | 76% | 100% | 50% | 5 |
+  | 100 | 96% | 100% | **91,7%** | 5 |
+  | 200 | 100% | 100% | 100% | 6 |
+
+  Criterio rispettato (≥ 90% sulla metà di verifica con K = 100 < 200). Il caso più difficile è `shipping-price` (177° posto): la versione in core prende pesi in grammi e non tipi di dominio, e le soglie in admin stanno in una costante fuori dalla funzione. Il near-miss più alto è `onOrderPaid ~ onOrderShipped` (1° posto): due gestori di eventi che differiscono solo per il messaggio. Lo deve scartare il giudizio di F4.
+- **F3-06**: `paralog candidates [path]` con output per il terminale (segnali e cose in comune), `--json` nel formato dello scorer, `--limit`. `npm run bench` senza `--run` genera la run di paralog sulle fixture (`benchmarks/run.ts`) e la valuta. Tempo dei candidati, cache calda esclusa: 0,5–1,2 s sui repository reali.
+- **Prime impressioni sui repository reali** (actual): al primo posto una duplicazione vera (`createCategoryGroup` identica in `budget/envelope.ts` e `budget/tracking.ts`); poi wrapper di API scritti con lo stesso schema, che il giudizio dovrà classificare.
+- **Fixture**: aggiunto il near-miss `reserve-release` (operazioni opposte su `StockService`), emerso dal ranking e non annotato.
 
 ## Decisioni
 

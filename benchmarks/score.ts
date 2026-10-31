@@ -216,6 +216,8 @@ export function sumUsage(usages: readonly (Usage | undefined)[]): TotalUsage {
 export interface FixtureScore {
   readonly fixture: string;
   readonly candidates: CandidateScore | null;
+  /** Candidate recall on the tuning and verification halves (see split.ts). */
+  readonly candidateSplits: { readonly tuning: CandidateScore; readonly verification: CandidateScore } | null;
   readonly findings: FindingScore | null;
 }
 
@@ -252,6 +254,16 @@ export function renderMarkdown(score: Score): string {
       lines.push("| K | Recall | D1 | D2 | D3 | D4 | Near-misses in top K |", "|---|---|---|---|---|---|---|");
       for (const r of c.recallAtK) lines.push(`| ${r.k} | ${pct(r.recall)} | ${difficultyCells(r.byDifficulty)} | ${r.nearMisses} |`);
       lines.push("");
+      if (fixture.candidateSplits !== null) {
+        const { tuning, verification } = fixture.candidateSplits;
+        lines.push("| K | Recall, tuning half | Recall, verification half |", "|---|---|---|");
+        tuning.recallAtK.forEach((r, i) => {
+          lines.push(`| ${r.k} | ${pct(r.recall)} | ${pct(verification.recallAtK[i]?.recall ?? null)} |`);
+        });
+        lines.push("");
+      }
+      const missed = Object.entries(c.firstHitRank).filter(([, rank]) => rank === null).map(([id]) => `\`${id}\``);
+      if (missed.length > 0) lines.push(`Never ranked: ${missed.join(", ")}`, "");
     }
     if (fixture.findings !== null) {
       const f = fixture.findings;

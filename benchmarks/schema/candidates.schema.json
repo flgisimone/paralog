@@ -5,21 +5,50 @@
   "description": "Ranked candidate pairs produced by a tool on one benchmark target. Array order is the rank.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["tool", "candidates"],
+  "required": [
+    "tool",
+    "candidates"
+  ],
   "properties": {
-    "$schema": { "type": "string" },
-    "tool": { "type": "string", "minLength": 1 },
+    "$schema": {
+      "type": "string"
+    },
+    "tool": {
+      "type": "string",
+      "minLength": 1
+    },
     "candidates": {
       "type": "array",
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["members"],
+        "required": [
+          "members"
+        ],
         "properties": {
-          "members": { "$ref": "#/$defs/pair" },
-          "score": { "type": "number" }
+          "members": {
+            "$ref": "#/$defs/pair"
+          },
+          "score": {
+            "type": "number"
+          },
+          "signals": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "Signals that explain the pair (tool specific)."
+          },
+          "shared": {
+            "type": "object",
+            "description": "What the two units have in common (tool specific)."
+          }
         }
       }
+    },
+    "stats": {
+      "type": "object",
+      "description": "Tool specific statistics of the run."
     }
   },
   "$defs": {
@@ -28,6 +57,13 @@
       "pattern": "^[^#]+#[^#]+$",
       "description": "Unit id (file#Qualified.name:kind) or file#Qualified.name."
     },
-    "pair": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "$ref": "#/$defs/unitRef" } }
+    "pair": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "$ref": "#/$defs/unitRef"
+      }
+    }
   }
 }

@@ -44,9 +44,52 @@ export interface ParalogConfig {
   readonly exclude: readonly string[];
   /** When false, `DEFAULT_EXCLUDES` are not applied. */
   readonly defaultExcludes: boolean;
+  /** Optional embeddings for the candidates; off when absent. */
+  readonly embeddings?: EmbeddingsConfig;
+}
+
+export interface EmbeddingsConfig {
+  /** OpenAI-compatible endpoint without `/embeddings`, e.g. `http://localhost:11434/v1` for Ollama. */
+  readonly baseUrl: string;
+  readonly model: string;
+  /** Name of the environment variable holding the API key; the key itself is never stored. */
+  readonly apiKeyEnv?: string;
+  /** Neighbours added per unit. Default 5. */
+  readonly neighbors?: number;
 }
 
 export const DEFAULT_CONFIG: ParalogConfig = { tsconfigs: [], exclude: [], defaultExcludes: true };
+
+function parseEmbeddings(value: unknown): EmbeddingsConfig | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new ConfigError(`${CONFIG_FILE}: 'embeddings' must be an object`);
+  }
+  const e = value as Record<string, unknown>;
+  for (const key of Object.keys(e)) {
+    if (!["baseUrl", "model", "apiKeyEnv", "neighbors"].includes(key)) {
+      throw new ConfigError(`${CONFIG_FILE}: unknown option 'embeddings.${key}'`);
+    }
+  }
+  if (typeof e.baseUrl !== "string" || !/^https?:\/\//.test(e.baseUrl)) {
+    throw new ConfigError(`${CONFIG_FILE}: 'embeddings.baseUrl' must be an http(s) URL`);
+  }
+  if (typeof e.model !== "string" || e.model === "") {
+    throw new ConfigError(`${CONFIG_FILE}: 'embeddings.model' must be a non-empty string`);
+  }
+  if (e.apiKeyEnv !== undefined && (typeof e.apiKeyEnv !== "string" || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(e.apiKeyEnv))) {
+    throw new ConfigError(`${CONFIG_FILE}: 'embeddings.apiKeyEnv' must be the name of an environment variable, not a key`);
+  }
+  if (e.neighbors !== undefined && (typeof e.neighbors !== "number" || !Number.isInteger(e.neighbors) || e.neighbors < 1)) {
+    throw new ConfigError(`${CONFIG_FILE}: 'embeddings.neighbors' must be a positive integer`);
+  }
+  return {
+    baseUrl: e.baseUrl,
+    model: e.model,
+    ...(e.apiKeyEnv === undefined ? {} : { apiKeyEnv: e.apiKeyEnv }),
+    ...(e.neighbors === undefined ? {} : { neighbors: e.neighbors }),
+  };
+}
 
 export class ConfigError extends Error {
   override readonly name = "ConfigError";
@@ -66,7 +109,7 @@ export function parseConfig(data: unknown): ParalogConfig {
     throw new ConfigError(`${CONFIG_FILE}: must contain a JSON object`);
   }
   const record = data as Record<string, unknown>;
-  const known = new Set(["$schema", "tsconfigs", "exclude", "defaultExcludes"]);
+  const known = new Set(["$schema", "tsconfigs", "exclude", "defaultExcludes", "embeddings"]);
   for (const key of Object.keys(record)) {
     if (!known.has(key)) throw new ConfigError(`${CONFIG_FILE}: unknown option '${key}'`);
   }
@@ -74,10 +117,12 @@ export function parseConfig(data: unknown): ParalogConfig {
   if (defaultExcludes !== undefined && typeof defaultExcludes !== "boolean") {
     throw new ConfigError(`${CONFIG_FILE}: 'defaultExcludes' must be a boolean`);
   }
+  const embeddings = parseEmbeddings(record.embeddings);
   return {
     tsconfigs: stringArray(record.tsconfigs, "tsconfigs") ?? DEFAULT_CONFIG.tsconfigs,
     exclude: stringArray(record.exclude, "exclude") ?? DEFAULT_CONFIG.exclude,
     defaultExcludes: defaultExcludes ?? DEFAULT_CONFIG.defaultExcludes,
+    ...(embeddings === undefined ? {} : { embeddings }),
   };
 }
 

@@ -655,6 +655,20 @@
         }
       ],
       "reason": "Handlers of different events that only share the notification call."
+    },
+    {
+      "id": "reserve-release",
+      "members": [
+        {
+          "file": "packages/core/src/inventory/stock.service.ts",
+          "symbol": "StockService.reserve"
+        },
+        {
+          "file": "packages/core/src/inventory/stock.service.ts",
+          "symbol": "StockService.release"
+        }
+      ],
+      "reason": "Opposite operations on the same stock: added after F3 ranked the pair high."
     }
   ]
 }

@@ -1,7 +1,8 @@
 /**
  * npm run bench -- [--run <dir>] [--all]
  *
- * Scores the outputs of one run. Layout of the run directory:
+ * Without --run, produces the current paralog run in benchmarks/results/latest and scores it;
+ * with --run, scores an existing run. Layout of the run directory:
  *
  *   <run>/fixtures/<fixture>/candidates.json   ranked candidate pairs (optional)
  *   <run>/fixtures/<fixture>/findings.json     findings (optional)
@@ -32,6 +33,8 @@ import {
   type FixtureScore,
   type RealScore,
 } from "./score.js";
+import { generateRun } from "./run.js";
+import { restrictToSplit } from "./split.js";
 
 const BENCHMARKS = import.meta.dirname;
 
@@ -62,9 +65,17 @@ export function bench(runDir: string, options: { includeUnverified?: boolean } =
       findings = read(findingsPath, validateFindings);
       usages.push(findings.usage);
     }
+    const candidates = existsSync(candidatesPath) ? read(candidatesPath, validateCandidates) : undefined;
     fixtures.push({
       fixture,
-      candidates: existsSync(candidatesPath) ? scoreCandidates(annotations, read(candidatesPath, validateCandidates)) : null,
+      candidates: candidates === undefined ? null : scoreCandidates(annotations, candidates),
+      candidateSplits:
+        candidates === undefined
+          ? null
+          : {
+              tuning: scoreCandidates(restrictToSplit(annotations, "tuning"), candidates),
+              verification: scoreCandidates(restrictToSplit(annotations, "verification"), candidates),
+            },
       findings: findings === undefined ? null : scoreFindings(annotations, findings, options),
     });
   }
@@ -91,6 +102,8 @@ function main(): void {
     options: { run: { type: "string" }, all: { type: "boolean" } },
   });
   const runDir = resolve(values.run ?? join(BENCHMARKS, "results", "latest"));
+  // Without --run, produce the current run of paralog first.
+  if (values.run === undefined) generateRun(runDir);
   const { json, markdown } = bench(runDir, { includeUnverified: values.all === true });
   writeFileSync(join(runDir, "score.json"), json);
   writeFileSync(join(runDir, "score.md"), markdown);

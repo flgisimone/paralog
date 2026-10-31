@@ -16,7 +16,8 @@ Guide for coding agents working **on** paralog.
 | `npm test` | Vitest only. |
 | `npm run smoke` | Packs the tarball, installs it in a clean project and runs the CLI. |
 | `npm run build` | Rollup build into `dist/`. |
-| `npm run bench -- --run <dir>` | Scores a benchmark run (see `benchmarks/README.md`). |
+| `npm run bench` | Produces the current paralog run on the fixtures and scores it. |
+| `npm run bench -- --run <dir>` | Scores an existing run (see `benchmarks/README.md`). |
 | `npm run bench:baselines` | Runs jscpd and Fallow on the fixtures and scores them (needs network for npx). |
 | `npm run bench:fetch` | Downloads the real repositories of `benchmarks/real/repos.json` at their pinned commits. |
 | `npm run bench:units` | Extraction time and memory on the real repositories, cold and warm. |
@@ -30,6 +31,7 @@ Guide for coding agents working **on** paralog.
 | `src/cli/` | CLI (`paralog` bin); `main.ts` is the process wrapper, `index.ts` is testable. |
 | `src/config.ts`, `src/discovery.ts` | `paralog.config.json` and tsconfig discovery. |
 | `src/extract.ts` | Unit extraction with ts-morph. |
+| `src/candidates/` | Candidates (F3): `names.ts` (name tokens), `signals.ts`, `embeddings.ts`, `index.ts` (blocking, exclusions, ranking). |
 | `src/cache.ts` | `.paralog/cache/`: units per file, keyed by the file and its project imports. |
 | `benchmarks/` | Benchmark formats, fixtures, real repositories, scorer. |
 | `benchmarks/fixtures/shop/` | Synthetic fixture; `annotations.json` lists the expected overlaps and near-misses. Not type-checked or linted by the repository config: `benchmarks/fixtures.test.ts` checks it. |

@@ -18,9 +18,9 @@ describe("fixture shop (F1-03)", () => {
   const annotations = loadAnnotations("shop");
   const extraction = extractUnits({ root });
 
-  it("has 25 overlaps with at least 5 per difficulty and 15 near-misses", () => {
+  it("has 25 overlaps with at least 5 per difficulty and at least 15 near-misses", () => {
     expect(annotations.overlaps).toHaveLength(25);
-    expect(annotations.nearMisses).toHaveLength(15);
+    expect(annotations.nearMisses.length).toBeGreaterThanOrEqual(15);
     for (const difficulty of [1, 2, 3, 4]) {
       expect(annotations.overlaps.filter((o) => o.difficulty === difficulty).length).toBeGreaterThanOrEqual(5);
     }

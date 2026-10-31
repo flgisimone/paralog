@@ -66,6 +66,8 @@ export interface RankedCandidate {
   /** Unit ids (`file#Name:kind`) or `file#Name`. */
   readonly members: readonly [string, string];
   readonly score?: number;
+  readonly signals?: Readonly<Record<string, number>>;
+  readonly shared?: Readonly<Record<string, unknown>>;
 }
 
 /** Candidate pairs of one run on one target; the array order is the rank. */

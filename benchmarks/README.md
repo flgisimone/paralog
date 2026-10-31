@@ -16,8 +16,11 @@ How paralog's precision and recall are measured. The plan is in [`plan/01-benchm
 ## Scoring a run
 
 ```bash
-npm run bench -- --run <dir> [--all]
+npm run bench                      # produce paralog's run in results/latest and score it
+npm run bench -- --run <dir> [--all]   # score an existing run
 ```
+
+The candidate scores are also reported on the two halves of each fixture (`split.ts`): within each difficulty, overlaps sorted by id alternate between the *tuning* half (used to choose weights) and the *verification* half (only used to check them).
 
 The run directory holds the outputs of one tool (or one model) on the targets:
 

@@ -21,7 +21,7 @@ A *paralog* is a gene duplicated inside the same genome that then diverges: diff
 
 ## Status
 
-The plan is in [`plan/`](plan/README.md) (in Italian). Current work: benchmark (F1) and foundations (F2); the synthetic benchmark fixture is in [`benchmarks/fixtures/shop`](benchmarks/fixtures/shop).
+The plan is in [`plan/`](plan/README.md) (in Italian). Done: foundations (F2) and deterministic candidates (F3); current work: AI judgment (F4); the synthetic benchmark fixture is in [`benchmarks/fixtures/shop`](benchmarks/fixtures/shop).
 
 ## Configuration
 
@@ -31,6 +31,7 @@ paralog finds every `tsconfig.json` under the root (workspaces and project refer
 |---|---|---|
 | `tsconfigs` | `[]` (discover all) | tsconfig files to use, relative to the root; their project references are followed. |
 | `exclude` | `[]` | Extra globs to skip, relative to the root. |
+| `embeddings` | none | Optional embeddings for the candidates; see [Embeddings](#embeddings-optional). |
 | `defaultExcludes` | `true` | Skip tests (`*.test.ts`, `*.spec.ts`, `__tests__/`, `test/`, `tests/`, `e2e/`), declaration files, generated code (`*.generated.ts`, `*.gen.ts`, `generated/`, `__generated__/`) and `node_modules/`, `dist/`, `build/`, `coverage/`. |
 
 ## Units and their ids
@@ -43,6 +44,36 @@ Each unit has an id like `src/users/user.service.ts#UserService.deactivate:metho
 - renaming the unit or one of its containers (class, namespace, object), moving it to another file, or turning a function into an arrow function (or the other way round) **changes** it.
 
 When two units would get the same id (declaration merging, duplicate keys), the second one gets a `~2` suffix.
+
+## Candidates
+
+`paralog candidates [path]` ranks pairs of units that may implement the same responsibility, without AI. Each pair comes with the signals that explain it and what the two units share:
+
+| Signal | Compares |
+|---|---|
+| `types` | Project types in the signatures and types of the touched properties |
+| `properties` | Properties read or written (`User.status`), the unit's own fields excluded |
+| `calls` | Called functions and methods |
+| `literals` | Strings of 3+ characters and numbers other than 0, 1, 2 |
+| `names` | Name tokens, with a small list of synonyms (`close` ~ `deactivate`, `fetch` ~ `get`) |
+| `shape` | Structure of the body, names and values left out |
+| `embedding` | Embedding similarity, only when embeddings are configured |
+
+Shared features weigh more when few units have them. Only units that share at least two features (or one rare feature) are compared. Never paired: getters, setters, constructors, units with fewer than 15 syntax nodes, two implementations of the same interface or abstract member, a unit and the unit it calls.
+
+Options: `--limit <n>` (default 20, or 200 with `--json`), `--json` (the benchmark format), `--no-cache`.
+
+### Embeddings (optional)
+
+Off unless `paralog.config.json` has an `embeddings` section. Any API compatible with OpenAI's `POST /embeddings` works, Ollama included:
+
+```json
+{
+  "embeddings": { "baseUrl": "http://localhost:11434/v1", "model": "nomic-embed-text", "neighbors": 5 }
+}
+```
+
+The source of every unit is sent to that endpoint. `apiKeyEnv` names the environment variable that holds the API key; the key never goes in the file. Vectors are cached in `.paralog/cache/` by body hash.
 
 ## Cache
 

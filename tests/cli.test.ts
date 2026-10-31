@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ExitCode, run, type CliIO } from "../src/cli/index.js";
 import { VERSION } from "../src/index.js";
+import { STRICT_TSCONFIG, writeRepo } from "./helpers.js";
 
 function capture(): CliIO & { out: string; err: string } {
   const io = {
@@ -39,5 +40,25 @@ describe("cli", () => {
     const io = capture();
     expect(run(["--nope"], io)).toBe(ExitCode.Error);
     expect(io.err).toContain("--help");
+  });
+});
+
+describe("cli units", () => {
+  it("prints the units of a repository as JSON", () => {
+    const root = writeRepo({
+      "tsconfig.json": STRICT_TSCONFIG,
+      "src/a.ts": "export function double(n: number): number { return n * 2; }",
+    });
+    const io = capture();
+    expect(run(["units", root], io)).toBe(ExitCode.Ok);
+    const units = JSON.parse(io.out) as { id: string }[];
+    expect(units.map((u) => u.id)).toEqual(["src/a.ts#double:function"]);
+    expect(io.err).toMatch(/^1 units from 1 files in 1 projects \(0 files excluded\) in \d+\.\ds\n$/);
+  });
+
+  it("fails with exit code 2 on a missing directory", () => {
+    const io = capture();
+    expect(run(["units", "/does/not/exist"], io)).toBe(ExitCode.Error);
+    expect(io.err).toContain("not a directory");
   });
 });

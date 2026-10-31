@@ -57,6 +57,7 @@
     "@eslint/js": "^10.0.1",
     "@rollup/plugin-typescript": "^12.3.1",
     "@types/node": "^22.19.0",
+    "@types/picomatch": "^4.0.3",
     "ajv": "^8.20.0",
     "eslint": "^10.14.0",
     "globals": "^17.13.0",
@@ -66,5 +67,9 @@
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.1",
     "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "picomatch": "^4.0.7",
+    "ts-morph": "^28.0.0"
   }
 }

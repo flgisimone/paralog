@@ -7,6 +7,9 @@ All notable changes to this project are documented here. The format follows [Kee
 ### Added
 
 - Package scaffold with the `paralog` and `paralog/mcp` entry points and the `paralog` bin (`--version`, `--help`).
+- Project discovery: every `tsconfig.json` under the root (workspaces, project references), each file assigned to the nearest tsconfig; tests, declarations, generated files and build output excluded by default; `paralog.config.json` with `tsconfigs`, `exclude`, `defaultExcludes`.
+- Unit extraction with ts-morph: functions, methods, accessors, constructors and named arrow functions, with resolved parameter and return types, touched properties qualified by their declaring type, resolved calls, non-trivial literals, implemented interface members, statement count and a formatting-insensitive body hash.
+- `paralog units [path]` prints the units as JSON.
 - Benchmark annotation formats (`benchmarks/schema.ts`, JSON Schemas) with validation.
 
 ## [0.0.1]
